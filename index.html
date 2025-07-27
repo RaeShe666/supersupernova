@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>古人类匹配器</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: auto; padding: 20px; }
+        #upload { margin-bottom: 20px; }
+        canvas { border: 1px solid #ccc; }
+        #result { display: none; }
+        .section { margin-top: 20px; }
+        @media (max-width: 1024px) { body { padding: 10px; } canvas { width: 100%; } } /* 响应式设计 */
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@latest/build/qrcode.min.js"></script>
+</head>
+<body>
+    <h1>上传您的正面照片，探索远古祖先！</h1>
+    <input type="file" id="upload" accept="image/*">
+    <button onclick="processImage()">分析</button>
+    <div id="result">
+        <h2>分析结果</h2>
+        <p id="matchType"></p>
+        <p id="score"></p>
+        <canvas id="morphCanvas" width="400" height="400"></canvas>
+        <div class="section">
+            <h3>推理依据（科普可视化）</h3>
+            <canvas id="chart" width="400" height="200"></canvas>
+            <p id="explanation"></p>
+        </div>
+        <div class="section">
+            <h3>分享图片</h3>
+            <canvas id="shareCanvas" width="800" height="600"></canvas>
+            <button onclick="downloadShare()">下载分享图片</button>
+        </div>
+    </div>
+
+    <script>
+        // 预加载face-api模型
+        Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')
+        ]).then(() => console.log('Models loaded'));
+
+        // 古人类数据库（特征向量: [FWHR, Brow, Chin, Nose, Slope, Eye], 预设图像URL, 描述）
+        const ancientHumans = {
+            'Australopithecus': { vector: [1.85, 0.16, 0.04, 0.35, 22, 0.45], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Australopithecus_afarensis.JPG/200px-Australopithecus_afarensis.JPG', desc: '您的脸部投影类似于南方古猿，适应早期咀嚼坚硬食物。' },
+            'Homo erectus': { vector: [1.7, 0.13, 0.06, 0.37, 20, 0.43], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Homo_erectus.jpg/200px-Homo_erectus.jpg', desc: '类似于直立人，眉脊突出表明早期迁徙适应。' },
+            'Neanderthal': { vector: [1.6, 0.14, 0.08, 0.42, 15, 0.4], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Neanderthal_profile.jpg/200px-Neanderthal_profile.jpg', desc: '尼安德特人特征，大鼻子适应寒冷气候。' },
+            'Homo sapiens': { vector: [1.45, 0.09, 0.13, 0.28, 8, 0.38], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Early_modern_human_skull.jpg/200px-Early_modern_human_skull.jpg', desc: '现代智人，平坦脸部反映饮食和社交演化。' }
+        };
+
+        // 随机标语
+        const slogans = ['原来我的远古亲戚长这样！', '穿越时空，看看祖先的模样！', '你的脸藏着人类演化的秘密！'];
+
+        async function processImage() {
+            const file = document.getElementById('upload').files[0];
+            if (!file) return alert('请上传照片');
+            const img = await faceapi.bufferToImage(file);
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks();
+            if (!detection) return alert('未检测到脸部，请上传正面照片');
+
+            const landmarks = detection.landmarks.positions;
+            // 计算特征（简化示例，实际需精确坐标计算）
+            const faceWidth = landmarks[16].x - landmarks[0].x;
+            const faceHeight = landmarks[8].y - landmarks[19].y;
+            const fwhr = faceWidth / faceHeight;
+            const brow = (landmarks[19].y - landmarks[37].y) / faceHeight; // 眉脊
+            const chin = (landmarks[8].y - landmarks[57].y) / faceHeight; // 下巴
+            const nose = (landmarks[35].x - landmarks[31].x) / faceWidth;
+            const slope = Math.atan2(landmarks[27].y - landmarks[19].y, landmarks[27].x - landmarks[19].x) * 180 / Math.PI;
+            const eyeDist = (landmarks[42].x - landmarks[39].x) / faceWidth;
+            const userVector = [fwhr, brow, chin, nose, slope, eyeDist];
+
+            // 匹配
+            let minDist = Infinity, matchKey;
+            for (let key in ancientHumans) {
+                const dist = euclideanDistance(userVector, ancientHumans[key].vector);
+                if (dist < minDist) { minDist = dist; matchKey = key; }
+            }
+            const score = Math.round(100 - (minDist / 5 * 100)); // 假设max dist=5
+
+            document.getElementById('matchType').innerText = `最匹配：${matchKey}`;
+            document.getElementById('score').innerText = `相似度：${score}%`;
+            document.getElementById('explanation').innerText = ancientHumans[matchKey].desc + ' 人类演化知识：从猿人到智人，脸部逐渐平坦以适应工具使用和社交。';
+
+            // 生成morph图
+            await drawMorph(img, ancientHumans[matchKey].image, matchKey);
+
+            // 可视化图表
+            drawChart(userVector, ancientHumans[matchKey].vector);
+
+            // 合成分享图片
+            await drawShare(img, matchKey, score);
+
+            document.getElementById('result').style.display = 'block';
+        }
+
+        function euclideanDistance(v1, v2) {
+            return Math.sqrt(v1.reduce((sum, val, i) => sum + Math.pow(val - v2[i], 2), 0));
+        }
+
+        async function drawMorph(userImg, ancientUrl, key) {
+            const canvas = document.getElementById('morphCanvas');
+            const ctx = canvas.getContext('2d');
+            const ancientImg = await loadImage(ancientUrl);
+            ctx.drawImage(userImg, 0, 0, 400, 400);
+            ctx.globalAlpha = 0.5;
+            ctx.drawImage(ancientImg, 0, 0, 400, 400);
+            ctx.globalAlpha = 1;
+            ctx.font = '20px Arial';
+            ctx.fillText(`您的${key}形象`, 10, 380);
+        }
+
+        function drawChart(user, template) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['FWHR', 'Brow', 'Chin', 'Nose', 'Slope', 'Eye'],
+                    datasets: [{ label: '您', data: user, backgroundColor: 'blue' }, { label: '模板', data: template, backgroundColor: 'green' }]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        async function drawShare(userImg, key, score) {
+            const canvas = document.getElementById('shareCanvas');
+            const ctx = canvas.getContext('2d');
+            const ancientImg = await loadImage(ancientHumans[key].image);
+            ctx.drawImage(userImg, 50, 100, 300, 300);
+            ctx.drawImage(ancientImg, 450, 100, 300, 300);
+            ctx.font = '30px Arial';
+            ctx.fillText(`相似度: ${score}%`, 350, 250);
+            ctx.fillText(slogans[Math.floor(Math.random() * slogans.length)], 200, 450);
+            // QR码
+            const qrCanvas = document.createElement('canvas');
+            QRCode.toCanvas(qrCanvas, window.location.href, { width: 100 });
+            ctx.drawImage(qrCanvas, 350, 450);
+        }
+
+        function downloadShare() {
+            const canvas = document.getElementById('shareCanvas');
+            const link = document.createElement('a');
+            link.download = 'ancient-match.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function loadImage(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.src = url;
+            });
+        }
+    </script>
+</body>
+</html>
