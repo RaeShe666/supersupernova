@@ -79,7 +79,7 @@ Return your analysis as a JSON object with exactly this structure:
 }
 
 Guidelines:
-- For colors: Extract the 4 most prominent brand colors as hex codes.
+- For colors: You MUST extract EXACTLY 4 colors that are actually used on the website. Identify the 4 most frequently used colors (primary brand color, secondary colors, accent colors, background colors). Do NOT use placeholder colors like #888888. Each color must be a real color from the website.
 - For typography: Return the primary font family name.
 - For baseAppearance: Choose the style that best matches their visual design.
 - For keywords: Focus on audience, value proposition, features.
@@ -119,11 +119,11 @@ Guidelines:
 
     const parsed = JSON.parse(jsonMatch[0])
 
-    // Ensure 4 colors
-    if (parsed.visualSystem?.colors?.length < 4) {
-        while (parsed.visualSystem.colors.length < 4) {
-            parsed.visualSystem.colors.push('#888888')
-        }
+    // Validate colors - filter out invalid ones, no fake padding
+    if (parsed.visualSystem?.colors) {
+        parsed.visualSystem.colors = parsed.visualSystem.colors
+            .filter(c => c && /^#[0-9A-Fa-f]{6}$/.test(c))
+            .slice(0, 4)
     }
 
     // Ensure images array exists

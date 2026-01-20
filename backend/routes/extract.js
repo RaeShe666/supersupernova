@@ -114,7 +114,7 @@ Return your analysis as a JSON object with exactly this structure:
 }
 
 Guidelines:
-- For colors: Extract the 4 most prominent colors as hex codes from the screenshot.
+- For colors: You MUST extract EXACTLY 4 colors that are actually used on the website. Analyze the screenshot carefully and identify the 4 most frequently used colors (primary brand color, secondary colors, accent colors, background colors). Do NOT use placeholder colors like #888888 or #000000 unless they are genuinely used. Each color must be a real color visible on the website.
 - For typography: Identify the primary font family used.
 - For baseAppearance: Choose the style that best matches the visual design.
 - For visualAreas: Identify exactly 3 areas. Use yPercent (0-100) for vertical position and heightPercent for height.
@@ -214,11 +214,12 @@ Guidelines:
             delete brandKit.brandContext.tone
         }
 
-        // Ensure 4 colors
-        if (brandKit.visualSystem?.colors?.length < 4) {
-            while (brandKit.visualSystem.colors.length < 4) {
-                brandKit.visualSystem.colors.push('#888888')
-            }
+        // Validate colors - ensure we have valid hex colors (no padding with fake colors)
+        if (brandKit.visualSystem?.colors) {
+            // Filter out any invalid or placeholder colors
+            brandKit.visualSystem.colors = brandKit.visualSystem.colors
+                .filter(c => c && /^#[0-9A-Fa-f]{6}$/.test(c))
+                .slice(0, 4) // Keep only first 4 valid colors
         }
 
         // Add logo from metadata
