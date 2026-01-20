@@ -72,15 +72,16 @@ function BrandIdentity({ data, onChange }) {
             <div className="field-group">
                 <label className="field-label">Color</label>
                 <div className="color-system">
-                    {colors.map((color, index) => (
+                    {(colors.length > 0 ? colors : [null, null, null, null]).map((color, index) => (
                         <div key={index} className="color-item">
                             <button
-                                className={`color-dot ${index === 0 ? 'primary' : 'secondary'} ${activeColorIndex === index ? 'active' : ''}`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => setActiveColorIndex(activeColorIndex === index ? null : index)}
-                                title={index === 0 ? 'Primary Color' : `Secondary Color ${index}`}
+                                className={`color-dot ${index === 0 ? 'primary' : 'secondary'} ${!color ? 'empty' : ''} ${activeColorIndex === index ? 'active' : ''}`}
+                                style={color ? { backgroundColor: color } : {}}
+                                onClick={() => color && setActiveColorIndex(activeColorIndex === index ? null : index)}
+                                title={!color ? 'No color extracted' : (index === 0 ? 'Primary Color' : `Secondary Color ${index}`)}
+                                disabled={!color}
                             />
-                            {activeColorIndex === index && (
+                            {activeColorIndex === index && color && (
                                 <ColorPicker
                                     color={color}
                                     onChange={(newColor) => handleColorChange(index, newColor)}

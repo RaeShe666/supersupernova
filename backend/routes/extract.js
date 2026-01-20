@@ -214,18 +214,35 @@ Guidelines:
             delete brandKit.brandContext.tone
         }
 
-        // Keep first 4 colors (AI should return top 4 most used colors)
-        if (brandKit.visualSystem?.colors) {
-            brandKit.visualSystem.colors = brandKit.visualSystem.colors.slice(0, 4)
+        // Detect anti-crawl page
+        const antiCrawlKeywords = ['access denied', 'forbidden', '403', 'blocked', 'captcha', 'robot', 'not allowed', 'error', 'cloudflare']
+        let isAntiCrawl = false
+
+        if (metadata.title) {
+            const titleLower = metadata.title.toLowerCase()
+            isAntiCrawl = antiCrawlKeywords.some(kw => titleLower.includes(kw))
+        }
+
+        // If anti-crawl detected: clear colors, keep screenshot as visual image
+        if (isAntiCrawl) {
+            brandKit.visualSystem.colors = [] // Empty colors - frontend will show empty circles
+            // Use the full screenshot as visual image (showing the error page)
+            if (screenshotBase64) {
+                brandKit.brandContext.images = [screenshotBase64]
+            }
+        } else {
+            // Normal case: keep first 4 colors
+            if (brandKit.visualSystem?.colors) {
+                brandKit.visualSystem.colors = brandKit.visualSystem.colors.slice(0, 4)
+            }
+            // Add visual images to brandContext
+            brandKit.brandContext.images = visualImages.map(v => v.image)
         }
 
         // Add logo from metadata
         if (metadata.logoUrl || metadata.appleTouchIcon || metadata.favicon) {
             brandKit.brandIdentity.logo = metadata.logoUrl || metadata.appleTouchIcon || metadata.favicon
         }
-
-        // Add visual images to brandContext
-        brandKit.brandContext.images = visualImages.map(v => v.image)
 
         // Remove visualAreas from response
         delete brandKit.visualAreas

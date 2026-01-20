@@ -42,6 +42,16 @@
     box-shadow: 0 2px 8px rgba(97, 96, 96, 0.15);
 }
 
+.color-dot.empty {
+    background: transparent;
+    border: 2px dashed #ccc;
+    cursor: default;
+}
+
+.color-dot.empty:hover {
+    transform: none;
+}
+
 /* Typography Display Card */
 .typography-display-container {
     position: relative;
