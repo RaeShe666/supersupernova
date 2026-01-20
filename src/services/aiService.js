@@ -119,11 +119,9 @@ Guidelines:
 
     const parsed = JSON.parse(jsonMatch[0])
 
-    // Validate colors - filter out invalid ones, no fake padding
+    // Keep first 4 colors (AI should return top 4 most used colors)
     if (parsed.visualSystem?.colors) {
-        parsed.visualSystem.colors = parsed.visualSystem.colors
-            .filter(c => c && /^#[0-9A-Fa-f]{6}$/.test(c))
-            .slice(0, 4)
+        parsed.visualSystem.colors = parsed.visualSystem.colors.slice(0, 4)
     }
 
     // Ensure images array exists

@@ -1,0 +1,97 @@
+/* EditorPage Styles */
+
+.editor-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    /* 固定最小宽度，防止内容被压缩 */
+    min-width: 1000px;
+}
+
+/* Header */
+.editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: white;
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.back-btn:hover {
+    background: var(--gray-50);
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+}
+
+.header-center {
+    text-align: center;
+}
+
+.header-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.header-url {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 2px;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.save-btn {
+    padding: 10px 24px;
+    font-size: 0.875rem;
+    gap: 8px;
+}
+
+/* Main Editor Grid */
+.editor-main {
+    flex: 1;
+    padding: 32px;
+    overflow-y: auto;
+}
+
+.editor-grid {
+    display: grid;
+    /* 固定三列布局，不响应式变化 */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.editor-column {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    padding: 24px;
+    min-height: 600px;
+}
+
+/* 不再使用响应式布局 - 始终保持三列 */

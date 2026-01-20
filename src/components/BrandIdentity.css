@@ -1,0 +1,121 @@
+.brand-identity {
+    height: 100%;
+}
+
+.field-group {
+    margin-bottom: 24px;
+}
+
+.field-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    margin-top: -4px;
+}
+
+/* Color System - 4 colors */
+.color-system {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+.color-item {
+    position: relative;
+}
+
+.color-dot {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 2px 8px rgba(97, 96, 96, 0.15);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.color-dot:hover {
+    transform: scale(1.1);
+}
+
+.color-dot.active {
+    box-shadow: 0 2px 8px rgba(97, 96, 96, 0.15);
+}
+
+/* Typography Display Card */
+.typography-display-container {
+    position: relative;
+}
+
+.typography-display {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    /* 文字底部对齐 */
+    justify-content: center;
+    /* 水平居中 */
+    gap: 30px;
+    padding: 20px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.typography-display:hover {
+    border-color: var(--border-medium);
+    background: var(--gray-50);
+}
+
+.typography-preview-text {
+    font-size: 3rem;
+    font-weight: 400;
+    color: #6297e6;
+    line-height: 1;
+    /* 确保底部对齐准确 */
+}
+
+.typography-font-name {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    line-height: 1;
+    position: relative;
+    bottom: 6px;
+    /* 确保底部对齐准确 */
+}
+
+/* 悬浮编辑图标 - 右上角 */
+.typography-edit-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: var(--text-muted);
+}
+
+.typography-display:hover .typography-edit-icon {
+    opacity: 1;
+}
+
+/* Tagline Textarea */
+.tagline-textarea {
+    width: 100%;
+    height: 80px;
+    min-height: 0;
+    resize: none;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+}
+
+.tagline-textarea:focus {
+    outline: none;
+    border-color: #333;
+}

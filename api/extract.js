@@ -1,22 +1,33 @@
-// Brand Kit Extraction API - Render version
+// Brand Kit Extraction API
 // Handles screenshot + AI analysis + Visual Images extraction
 
-import { Router } from 'express'
 import sharp from 'sharp'
+import { URL } from 'url'
 
-const router = Router()
+export const config = {
+    runtime: 'nodejs',
+    maxDuration: 60
+}
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://yinli.one/v1'
-const API_MODEL = process.env.API_MODEL || 'gemini-3-flash-preview-thinking'
+export default async function handler(req, res) {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-router.get('/extract', async (req, res) => {
-    const url = req.query.url
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end()
+    }
+
+    const url = req.query.url || req.body?.url
 
     if (!url) {
         return res.status(400).json({ error: 'URL is required' })
     }
 
     const API_KEY = process.env.OPENAI_API_KEY
+    const API_BASE_URL = process.env.API_BASE_URL || 'https://yinli.one/v1'
+    const API_MODEL = process.env.API_MODEL || 'gemini-3-flash-preview-thinking'
 
     if (!API_KEY) {
         return res.status(500).json({ error: 'API key not configured' })
@@ -29,48 +40,21 @@ router.get('/extract', async (req, res) => {
         let metadata = {}
 
         try {
-            const SCREENSHOT_API_KEY = process.env.SCREENSHOT_API_KEY
-            if (SCREENSHOT_API_KEY) {
-                const params = new URLSearchParams({
-                    access_key: SCREENSHOT_API_KEY,
-                    url: url,
-                    viewport_width: '1280',
-                    viewport_height: '800',
-                    format: 'png',
-                    full_page: 'true',
-                    delay: '3',
-                    block_ads: 'true',
-                    block_cookie_banners: 'true',
-                    image_quality: '80',
-                    ignore_host_errors: 'true'
-                })
+            const screenshotRes = await fetch(`${getBaseUrl(req)}/api/screenshot?url=${encodeURIComponent(url)}`)
+            const screenshotData = await screenshotRes.json()
+            if (screenshotData.success) {
+                screenshotBase64 = screenshotData.screenshot
+                metadata = screenshotData.metadata || {}
 
-                const screenshotApiUrl = `https://api.screenshotone.com/take?${params.toString()}`
-                const screenshotResponse = await fetch(screenshotApiUrl)
-
-                if (screenshotResponse.ok) {
-                    const arrayBuffer = await screenshotResponse.arrayBuffer()
-                    screenshotBuffer = Buffer.from(arrayBuffer)
-                    screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
-                }
-            }
-
-            // Also extract metadata from HTML
-            const htmlResponse = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            })
-            if (htmlResponse.ok) {
-                const html = await htmlResponse.text()
-                const baseUrl = new URL(url).origin
-                metadata = extractMetadataFromHtml(html, baseUrl)
+                // Convert base64 to buffer for Sharp
+                const base64Data = screenshotBase64.replace(/^data:image\/\w+;base64,/, '')
+                screenshotBuffer = Buffer.from(base64Data, 'base64')
             }
         } catch (e) {
-            console.log('Screenshot/metadata failed, continuing:', e.message)
+            console.log('Screenshot failed, continuing without image:', e.message)
         }
 
-        // Step 2: Call AI for brand analysis
+        // Step 2: Call AI for brand analysis + visual areas detection
         const systemPrompt = `You are a brand analyst expert. Analyze the given website screenshot and extract:
 1. Brand kit information (name, tagline, colors, typography, etc.)
 2. Identify 3 key visual areas that best represent the brand's positioning, features, and highlights.
@@ -114,10 +98,11 @@ Return your analysis as a JSON object with exactly this structure:
 }
 
 Guidelines:
-- For colors: You MUST extract EXACTLY 4 colors that are actually used on the website. Analyze the screenshot carefully and identify the 4 most frequently used colors (primary brand color, secondary colors, accent colors, background colors). Do NOT use placeholder colors like #888888 or #000000 unless they are genuinely used. Each color must be a real color visible on the website.
+- For colors: Extract the 4 most prominent colors as hex codes from the screenshot.
 - For typography: Identify the primary font family used.
 - For baseAppearance: Choose the style that best matches the visual design.
-- For visualAreas: Identify exactly 3 areas. Use yPercent (0-100) for vertical position and heightPercent for height.
+- For visualAreas: Identify exactly 3 areas. Use yPercent (0-100) for vertical position and heightPercent for height, where 100% is the full page height.
+- Choose visual areas that best represent: brand positioning, core features/products, and visual highlights.
 - Return ONLY valid JSON, no additional text.`
 
         const messages = [
@@ -181,6 +166,7 @@ Guidelines:
                     const yStart = Math.floor((area.yPercent / 100) * height)
                     const areaHeight = Math.floor((area.heightPercent / 100) * height)
 
+                    // Ensure we don't exceed image bounds
                     const safeY = Math.min(yStart, height - 100)
                     const safeHeight = Math.min(areaHeight, height - safeY)
 
@@ -214,9 +200,11 @@ Guidelines:
             delete brandKit.brandContext.tone
         }
 
-        // Keep first 4 colors (AI should return top 4 most used colors)
-        if (brandKit.visualSystem?.colors) {
-            brandKit.visualSystem.colors = brandKit.visualSystem.colors.slice(0, 4)
+        // Ensure 4 colors
+        if (brandKit.visualSystem?.colors?.length < 4) {
+            while (brandKit.visualSystem.colors.length < 4) {
+                brandKit.visualSystem.colors.push('#888888')
+            }
         }
 
         // Add logo from metadata
@@ -224,13 +212,13 @@ Guidelines:
             brandKit.brandIdentity.logo = metadata.logoUrl || metadata.appleTouchIcon || metadata.favicon
         }
 
-        // Add visual images to brandContext
+        // Add visual images to brandContext (convert to simple string array)
         brandKit.brandContext.images = visualImages.map(v => v.image)
 
-        // Remove visualAreas from response
+        // Remove visualAreas from response (internal data)
         delete brandKit.visualAreas
 
-        res.json({
+        res.status(200).json({
             success: true,
             data: brandKit,
             hasScreenshot: !!screenshotBase64,
@@ -245,52 +233,10 @@ Guidelines:
             message: error.message
         })
     }
-})
-
-// Helper functions
-function extractMetadataFromHtml(html, baseUrl) {
-    const getMatch = (pattern) => {
-        const match = pattern.exec(html)
-        return match ? match[1] : null
-    }
-
-    return {
-        title: getMatch(/<title[^>]*>([^<]+)<\/title>/i),
-        description: getMatch(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i),
-        logoUrl: extractLogoFromHtml(html, baseUrl),
-        favicon: resolveUrl(
-            getMatch(/<link[^>]*rel="icon"[^>]*href="([^"]+)"/i),
-            baseUrl
-        ),
-        appleTouchIcon: resolveUrl(
-            getMatch(/<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]+)"/i),
-            baseUrl
-        )
-    }
 }
 
-function extractLogoFromHtml(html, baseUrl) {
-    const imgPatterns = [
-        /<img[^>]*class="[^"]*logo[^"]*"[^>]*src="([^"]+)"/gi,
-        /<img[^>]*src="([^"]*logo[^"]*)"/gi
-    ]
-
-    for (const pattern of imgPatterns) {
-        const match = pattern.exec(html)
-        if (match && match[1]) {
-            return resolveUrl(match[1], baseUrl)
-        }
-    }
-    return null
+function getBaseUrl(req) {
+    const protocol = req.headers['x-forwarded-proto'] || 'http'
+    const host = req.headers['x-forwarded-host'] || req.headers.host
+    return `${protocol}://${host}`
 }
-
-function resolveUrl(src, baseUrl) {
-    if (!src) return null
-    if (src.startsWith('data:')) return src
-    if (src.startsWith('http')) return src
-    if (src.startsWith('//')) return 'https:' + src
-    if (src.startsWith('/')) return baseUrl + src
-    return baseUrl + '/' + src
-}
-
-export default router

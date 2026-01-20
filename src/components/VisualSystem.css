@@ -1,0 +1,63 @@
+/* Visual System Styles */
+.visual-system {
+    height: 100%;
+}
+
+.field-group {
+    margin-bottom: 24px;
+}
+
+/* Base Appearance Options */
+.appearance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.appearance-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+}
+
+.appearance-option:hover {
+    border-color: var(--border-medium);
+    background: var(--gray-50);
+}
+
+.appearance-option.active {
+    border-color: var(--primary-dark);
+    background: var(--gray-50);
+}
+
+.appearance-thumbnail {
+    width: 80px;
+    height: 50px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.appearance-icon {
+    font-size: 1.5rem;
+    opacity: 0.6;
+}
+
+.appearance-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.appearance-option.active .appearance-name {
+    color: var(--primary);
+}

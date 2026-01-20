@@ -1,0 +1,40 @@
+.url-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.url-input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.url-input {
+    width: 100%;
+    padding: 16px 20px 16px 52px;
+    font-size: 1rem;
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    background: white;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.url-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.1);
+}
+
+.url-input::placeholder {
+    color: var(--text-muted);
+}
+
+.url-input:disabled {
+    background: var(--gray-50);
+    cursor: not-allowed;
+}
