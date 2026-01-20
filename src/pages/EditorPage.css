@@ -20,30 +20,34 @@
     position: sticky;
     top: 0;
     z-index: 50;
+    position: relative;
 }
 
-.back-btn {
+.save-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    background: transparent;
-    border: 1px solid var(--border-light);
+    padding: 10px 24px;
+    background: var(--primary-dark);
+    border: none;
     border-radius: var(--radius-md);
-    color: var(--text-secondary);
+    color: white;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
-.back-btn:hover {
-    background: var(--gray-50);
-    color: var(--text-primary);
-    border-color: var(--border-medium);
+.save-btn:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(74, 123, 247, 0.4);
+    transform: translateY(-1px);
 }
 
 .header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     text-align: center;
 }
 
@@ -64,16 +68,10 @@
     white-space: nowrap;
 }
 
-.save-btn {
-    padding: 10px 24px;
-    font-size: 0.875rem;
-    gap: 8px;
-}
-
 /* Main Editor Grid */
 .editor-main {
     flex: 1;
-    padding: 32px;
+    padding: 25px;
     overflow-y: auto;
 }
 
@@ -95,3 +93,25 @@
 }
 
 /* 不再使用响应式布局 - 始终保持三列 */
+/* 所有列固定最大高度 */
+.editor-column {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    padding: 24px;
+    max-height: calc(100vh - 120px);
+    /* 固定最大高度 */
+    overflow-y: auto;
+    /* 允许滚动 */
+}
+
+/* 第一列和第二列自动滚动 */
+.editor-column:nth-child(1),
+.editor-column:nth-child(2) {
+    overflow-y: auto;
+}
+
+/* 第三列（Brand Context）可滚动 */
+.editor-column:nth-child(3) {
+    overflow-y: auto;
+}

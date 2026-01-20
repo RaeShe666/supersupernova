@@ -18,6 +18,10 @@
     display: flex;
     gap: 30px;
     justify-content: center;
+    padding: 20px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: white;
 }
 
 .color-item {
@@ -52,61 +56,75 @@
     transform: none;
 }
 
-/* Typography Display Card */
-.typography-display-container {
-    position: relative;
+/* Logo + Font Row */
+.logo-font-row {
+    display: flex;
+    gap: 16px;
 }
 
-.typography-display {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
-    /* 文字底部对齐 */
-    justify-content: center;
-    /* 水平居中 */
-    gap: 30px;
-    padding: 20px;
-    background: white;
+/* Logo Column */
+.logo-column {
+    flex-shrink: 0;
+}
+
+/* Font Column */
+.font-column {
+    flex: 1;
+}
+
+/* Font Card */
+.font-card {
+    min-height: 120px;
+    position: relative;
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
+    border-radius: 12px;
+    background: white;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
     transition: all 0.2s ease;
 }
 
-.typography-display:hover {
+.font-card:hover {
     border-color: var(--border-medium);
     background: var(--gray-50);
 }
 
-.typography-preview-text {
+.font-preview {
     font-size: 3rem;
     font-weight: 400;
     color: #6297e6;
     line-height: 1;
-    /* 确保底部对齐准确 */
+    margin-bottom: 8px;
 }
 
-.typography-font-name {
-    font-size: 1rem;
+.font-name {
+    font-size: 0.875rem;
     color: var(--text-secondary);
     font-weight: 500;
-    line-height: 1;
-    position: relative;
-    bottom: 6px;
-    /* 确保底部对齐准确 */
 }
 
-/* 悬浮编辑图标 - 右上角 */
-.typography-edit-icon {
+/* Card Edit Icon (hover) - 用于 Logo 和 Font 卡片 */
+.card-edit-icon {
     position: absolute;
     top: 8px;
     right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
     transition: opacity 0.2s ease;
-    color: var(--text-muted);
+    color: #c5b89a;
 }
 
-.typography-display:hover .typography-edit-icon {
+.font-card:hover .card-edit-icon {
     opacity: 1;
 }
 

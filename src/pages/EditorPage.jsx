@@ -56,21 +56,19 @@ function EditorPage({ project, onSave, onBack }) {
         })
     }
 
-    const handleSave = () => {
-        if (formData) {
-            onSave(formData)
-        }
-    }
+
 
     return (
         <div className="editor-page">
             {/* Header */}
             <header className="editor-header">
-                <button className="back-btn" onClick={onBack}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                <button className="save-btn" onClick={onBack}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17,21 17,13 7,13 7,21" />
+                        <polyline points="7,3 7,8 15,8" />
                     </svg>
-                    Back
+                    Save
                 </button>
 
                 <div className="header-center">
@@ -80,14 +78,7 @@ function EditorPage({ project, onSave, onBack }) {
                     )}
                 </div>
 
-                <button className="btn btn-primary save-btn" onClick={handleSave}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                        <polyline points="17,21 17,13 7,13 7,21" />
-                        <polyline points="7,3 7,8 15,8" />
-                    </svg>
-                    Save
-                </button>
+
             </header>
 
             {/* Main Editor Grid */}

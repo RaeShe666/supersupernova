@@ -61,7 +61,7 @@
 }
 
 .font-picker-item.active {
-    color: #a8d86c;
+    color: var(--primary-dark);
 }
 
 .font-picker-item.custom {
@@ -78,7 +78,7 @@
 }
 
 .font-picker-item .check-icon {
-    color: #a8d86c;
+    color: var(--primary-dark);
     flex-shrink: 0;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .font-picker-link span {
-    color: #a8d86c;
+    color: var(--primary-dark);
     text-decoration: underline;
 }
 

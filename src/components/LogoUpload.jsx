@@ -34,7 +34,7 @@ function compressImage(file, maxWidth = 400, quality = 0.8) {
     })
 }
 
-function LogoUpload({ logo, onUpload, onRemove }) {
+function LogoUpload({ logo, onUpload }) {
     const inputRef = useRef(null)
 
     const handleClick = () => {
@@ -58,7 +58,7 @@ function LogoUpload({ logo, onUpload, onRemove }) {
     }
 
     return (
-        <div className="logo-upload">
+        <div className="logo-card" onClick={handleClick}>
             <input
                 ref={inputRef}
                 type="file"
@@ -67,31 +67,20 @@ function LogoUpload({ logo, onUpload, onRemove }) {
                 style={{ display: 'none' }}
             />
             {logo ? (
-                <div className="logo-preview">
-                    <img src={logo} alt="Brand Logo" />
-                    <div className="logo-actions">
-                        <button className="logo-action-btn replace" onClick={handleClick}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="17,8 12,3 7,8" />
-                                <line x1="12" y1="3" x2="12" y2="15" />
-                            </svg>
-                            Replace
-                        </button>
-                    </div>
-                </div>
+                <img src={logo} alt="Brand Logo" className="logo-image" />
             ) : (
-                <button className="logo-upload-btn" onClick={handleClick}>
-                    <div className="upload-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                    </div>
-                    <span className="upload-text">Upload</span>
-                    <span className="upload-hint">No brand logo yet</span>
-                </button>
+                <div className="logo-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                </div>
             )}
+            <div className="card-edit-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                </svg>
+            </div>
         </div>
     )
 }

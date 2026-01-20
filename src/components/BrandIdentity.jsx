@@ -8,7 +8,7 @@ function BrandIdentity({ data, onChange }) {
     const [activeColorIndex, setActiveColorIndex] = useState(null)
     const [showFontPicker, setShowFontPicker] = useState(false)
 
-    const colors = data?.colors || ['#FF6B4A', '#4A7BF7', '#22C55E', '#9333EA']
+    const colors = data?.colors || ['#f9f6f5ff', '#eceef0ff', '#f4f8f6ff', '#f8f6faff']
     const typography = data?.typography || 'Inter'
 
     // Load the current font on mount
@@ -47,14 +47,44 @@ function BrandIdentity({ data, onChange }) {
                 />
             </div>
 
-            {/* Logo Upload */}
+            {/* Logo + Typography Row */}
             <div className="field-group">
-                <label className="field-label">Logo</label>
-                <LogoUpload
-                    logo={data?.logo}
-                    onUpload={(logo) => onChange({ logo })}
-                    onRemove={() => onChange({ logo: null })}
-                />
+                <div className="logo-font-row">
+                    {/* Logo Column */}
+                    <div className="logo-column">
+                        <label className="field-label">Logo</label>
+                        <LogoUpload
+                            logo={data?.logo}
+                            onUpload={(logo) => onChange({ logo })}
+                        />
+                    </div>
+
+                    {/* Font Column */}
+                    <div className="font-column">
+                        <label className="field-label">Typography</label>
+                        <div className="font-card" onClick={() => setShowFontPicker(!showFontPicker)}>
+                            <div
+                                className="font-preview"
+                                style={{ fontFamily: `'${typography}', sans-serif` }}
+                            >
+                                Aa
+                            </div>
+                            <span className="font-name">{typography}</span>
+                            <div className="card-edit-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {showFontPicker && (
+                    <FontPicker
+                        currentFont={typography}
+                        onChange={handleFontChange}
+                        onClose={() => setShowFontPicker(false)}
+                    />
+                )}
             </div>
 
             {/* Tagline */}
@@ -90,38 +120,6 @@ function BrandIdentity({ data, onChange }) {
                             )}
                         </div>
                     ))}
-                </div>
-            </div>
-
-            {/* Typography - Font Picker */}
-            <div className="field-group">
-                <label className="field-label">Typography</label>
-                <div className="typography-display-container">
-                    <div
-                        className="typography-display"
-                        onClick={() => setShowFontPicker(!showFontPicker)}
-                    >
-                        <div
-                            className="typography-preview-text"
-                            style={{ fontFamily: `'${typography}', sans-serif` }}
-                        >
-                            Aa
-                        </div>
-                        <div className="typography-font-name">{typography}</div>
-                        <div className="typography-edit-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                        </div>
-                    </div>
-                    {showFontPicker && (
-                        <FontPicker
-                            currentFont={typography}
-                            onChange={handleFontChange}
-                            onClose={() => setShowFontPicker(false)}
-                        />
-                    )}
                 </div>
             </div>
         </div>

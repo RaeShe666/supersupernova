@@ -63,108 +63,109 @@ function BrandContext({ data, onChange }) {
         <div className="brand-context">
             <h3 className="section-label">Brand Context</h3>
 
-            {/* Overview */}
-            <div className="field-group">
-                <label className="field-label">Overview</label>
-                <div className="textarea-wrapper">
-                    <textarea
-                        className="textarea"
-                        placeholder="A concise product description to give AI background knowledge..."
-                        value={data?.overview || ''}
-                        onChange={(e) => onChange({ overview: e.target.value })}
+            <div className="context-content">
+                {/* Overview */}
+                <div className="field-group">
+                    <label className="field-label">Overview</label>
+                    <div className="textarea-wrapper">
+                        <textarea
+                            className="textarea"
+                            placeholder="A concise product description to give AI background knowledge..."
+                            value={data?.overview || ''}
+                            onChange={(e) => onChange({ overview: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                {/* Positioning Keywords */}
+                <div className="field-group">
+                    <label className="field-label">Positioning Keyword</label>
+                    <div className="keywords-container">
+                        <div className="keyword-input-row">
+                            <input
+                                type="text"
+                                className="keyword-input"
+                                placeholder="Add keyword..."
+                                value={newKeyword}
+                                onChange={(e) => setNewKeyword(e.target.value)}
+                                onKeyDown={handleKeywordKeyDown}
+                            />
+                            <button
+                                className="btn btn-accent add-keyword-btn"
+                                onClick={handleAddKeyword}
+                                disabled={!newKeyword.trim()}
+                            >
+                                + Add
+                            </button>
+                        </div>
+                        <div className="keywords-list">
+                            {keywords.map((keyword) => (
+                                <span key={keyword} className="keyword-tag">
+                                    <span className="keyword-text">{keyword}</span>
+                                    <button
+                                        className="keyword-remove"
+                                        onClick={() => handleRemoveKeyword(keyword)}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Brand Tone */}
+                <div className="field-group">
+                    <label className="field-label">Brand Tone</label>
+                    <div className="keywords-container">
+                        <div className="keyword-input-row">
+                            <input
+                                type="text"
+                                className="keyword-input"
+                                placeholder="Add tone..."
+                                value={newTone}
+                                onChange={(e) => setNewTone(e.target.value)}
+                                onKeyDown={handleToneKeyDown}
+                            />
+                            <button
+                                className="btn btn-accent add-keyword-btn"
+                                onClick={handleAddTone}
+                                disabled={!newTone.trim()}
+                            >
+                                + Add
+                            </button>
+                        </div>
+                        <div className="keywords-list">
+                            {tones.map((tone) => (
+                                <span key={tone} className="keyword-tag">
+                                    <span className="keyword-text">{tone}</span>
+                                    <button
+                                        className="keyword-remove"
+                                        onClick={() => handleRemoveTone(tone)}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Visual Images */}
+                <div className="field-group">
+                    <label className="field-label">Visual Images</label>
+                    <ImageGallery
+                        images={images}
+                        onAdd={handleAddImage}
+                        onRemove={handleRemoveImage}
+                        maxImages={6}
                     />
+                    {images.length === 0 && (
+                        <p className="field-hint" style={{ textAlign: 'center', marginTop: '3px', color: '#bc3b18ff' }}>
+                            Unable to capture website screenshot
+                        </p>
+                    )}
                 </div>
-            </div>
-
-            {/* Positioning Keywords */}
-            <div className="field-group">
-                <label className="field-label">Positioning Keyword</label>
-                <p className="field-hint">Audience, Value, Features, Highlights</p>
-                <div className="keywords-container">
-                    <div className="keyword-input-row">
-                        <input
-                            type="text"
-                            className="keyword-input"
-                            placeholder="Add keyword..."
-                            value={newKeyword}
-                            onChange={(e) => setNewKeyword(e.target.value)}
-                            onKeyDown={handleKeywordKeyDown}
-                        />
-                        <button
-                            className="btn btn-accent add-keyword-btn"
-                            onClick={handleAddKeyword}
-                            disabled={!newKeyword.trim()}
-                        >
-                            + Add
-                        </button>
-                    </div>
-                    <div className="keywords-list">
-                        {keywords.map((keyword) => (
-                            <span key={keyword} className="keyword-tag">
-                                <button
-                                    className="keyword-remove"
-                                    onClick={() => handleRemoveKeyword(keyword)}
-                                >
-                                    {keyword}
-                                </button>
-                                <span className="keyword-x">×</span>
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Brand Tone */}
-            <div className="field-group">
-                <label className="field-label">Brand Tone</label>
-                <div className="keywords-container">
-                    <div className="keyword-input-row">
-                        <input
-                            type="text"
-                            className="keyword-input"
-                            placeholder="Add tone..."
-                            value={newTone}
-                            onChange={(e) => setNewTone(e.target.value)}
-                            onKeyDown={handleToneKeyDown}
-                        />
-                        <button
-                            className="btn btn-accent add-keyword-btn"
-                            onClick={handleAddTone}
-                            disabled={!newTone.trim()}
-                        >
-                            + Add
-                        </button>
-                    </div>
-                    <div className="keywords-list">
-                        {tones.map((tone) => (
-                            <span key={tone} className="keyword-tag">
-                                <button
-                                    className="keyword-remove"
-                                    onClick={() => handleRemoveTone(tone)}
-                                >
-                                    {tone}
-                                </button>
-                                <span className="keyword-x">×</span>
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Visual Images */}
-            <div className="field-group">
-                <label className="field-label">Visual Images</label>
-                <ImageGallery
-                    images={images}
-                    onAdd={handleAddImage}
-                    onRemove={handleRemoveImage}
-                    maxImages={6}
-                />
-                {images.length === 0 && (
-                    <p className="field-hint" style={{ textAlign: 'center', marginTop: '12px', color: '#bc3b18ff' }}>
-                        Unable to capture website screenshot
-                    </p>
-                )}
             </div>
         </div>
     )

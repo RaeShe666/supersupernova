@@ -7,24 +7,28 @@
     margin-bottom: 24px;
 }
 
-/* Base Appearance Options */
-.appearance-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+/* Base Appearance Grid - 一排两个，固定宽度，居中 */
+.appearance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 155px);
+    column-gap: 23px;
+    row-gap: 25px;
+    justify-content: center;
 }
 
+/* 风格卡片 */
 .appearance-option {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 12px;
+    padding: 8px;
     background: white;
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
+    border-radius: 10px;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    text-align: left;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 100px;
 }
 
 .appearance-option:hover {
@@ -37,14 +41,27 @@
     background: var(--gray-50);
 }
 
+/* 缩略图容器 */
 .appearance-thumbnail {
-    width: 80px;
-    height: 50px;
-    border-radius: var(--radius-sm);
+    width: 130px;
+    height: 110px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.gradient-thumbnail {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+}
+
+.custom-thumbnail-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .appearance-icon {
@@ -53,11 +70,179 @@
 }
 
 .appearance-name {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-primary);
+    text-align: center;
 }
 
 .appearance-option.active .appearance-name {
-    color: var(--primary);
+    color: var(--primary-dark);
+}
+
+/* 添加框样式 */
+.add-style-btn {
+    border-style: dashed;
+}
+
+.add-style-btn:hover {
+    border-style: dashed;
+}
+
+.add-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-50);
+    color: var(--text-muted);
+}
+
+/* 自定义风格的操作按钮 */
+.custom-style-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.appearance-option:hover .custom-style-actions {
+    opacity: 1;
+}
+
+.style-action-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.style-action-btn.edit {
+    background: rgba(0, 0, 0, 0.5);
+    color: #c5b89a;
+}
+
+.style-action-btn.edit:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.style-action-btn.delete {
+    background: rgba(239, 68, 68, 0.8);
+    color: white;
+}
+
+.style-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 1);
+}
+
+/* 弹窗样式 */
+.style-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.style-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    width: 320px;
+    max-width: 90vw;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal-image-upload {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border: 2px dashed var(--border-light);
+    border-radius: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: border-color 0.2s ease;
+}
+
+.modal-image-upload:hover {
+    border-color: var(--border-medium);
+}
+
+.modal-image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modal-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.modal-name-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.modal-name-input:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modal-btn.apply {
+    padding: 10px 24px;
+    background: var(--primary-dark);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.modal-btn.apply:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.modal-btn.apply:disabled {
+    background: var(--gray-300);
+    cursor: not-allowed;
 }
