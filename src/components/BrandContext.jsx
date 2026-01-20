@@ -160,6 +160,11 @@ function BrandContext({ data, onChange }) {
                     onRemove={handleRemoveImage}
                     maxImages={6}
                 />
+                {images.length === 0 && (
+                    <p className="field-hint" style={{ textAlign: 'center', marginTop: '12px', color: '#bc3b18ff' }}>
+                        Unable to capture website screenshot
+                    </p>
+                )}
             </div>
         </div>
     )
