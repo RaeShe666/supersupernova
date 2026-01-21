@@ -9,6 +9,63 @@ const router = Router()
 const API_BASE_URL = process.env.API_BASE_URL || 'https://yinli.one/v1'
 const API_MODEL = process.env.API_MODEL || 'gemini-3-flash-preview-thinking'
 
+// Helper: Extract metadata from HTML (fallback when screenshot fails)
+function extractMetadataFromHtml(html, baseUrl) {
+    const metadata = {
+        title: '',
+        description: '',
+        ogImage: null,
+        favicon: null,
+        themeColor: null
+    }
+
+    // Title
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
+    if (titleMatch) metadata.title = titleMatch[1].trim()
+
+    // Meta description
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i)
+    if (descMatch) metadata.description = descMatch[1].trim()
+
+    // OG Image
+    const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+    if (ogImageMatch) metadata.ogImage = resolveUrl(ogImageMatch[1], baseUrl)
+
+    // Favicon
+    const faviconMatch = html.match(/<link[^>]+rel=["'](?:icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i)
+        || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:icon|shortcut icon)["']/i)
+    if (faviconMatch) {
+        metadata.favicon = resolveUrl(faviconMatch[1], baseUrl)
+    } else {
+        // Default favicon path
+        try {
+            const urlObj = new URL(baseUrl)
+            metadata.favicon = `${urlObj.origin}/favicon.ico`
+        } catch (e) { }
+    }
+
+    // Theme color
+    const themeMatch = html.match(/<meta[^>]+name=["']theme-color["'][^>]+content=["']([^"']+)["']/i)
+    if (themeMatch) metadata.themeColor = themeMatch[1]
+
+    return metadata
+}
+
+// Helper: Resolve relative URLs to absolute
+function resolveUrl(url, baseUrl) {
+    if (!url) return null
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+        return url
+    }
+    try {
+        return new URL(url, baseUrl).href
+    } catch (e) {
+        return null
+    }
+}
+
 router.get('/extract', async (req, res) => {
     const url = req.query.url
 
@@ -26,42 +83,85 @@ router.get('/extract', async (req, res) => {
         // Step 1: Take full-page screenshot using ScreenshotOne
         let screenshotBase64 = null
         let screenshotBuffer = null
+        let htmlMetadata = null  // Fallback metadata from HTML
 
         const SCREENSHOT_API_KEY = process.env.SCREENSHOT_API_KEY
         if (!SCREENSHOT_API_KEY) {
-            return res.status(500).json({ error: 'Screenshot API key not configured' })
+            console.warn('Screenshot API key not configured, will try HTML fallback')
         }
 
-        try {
-            const params = new URLSearchParams({
-                access_key: SCREENSHOT_API_KEY,
-                url: url,
-                viewport_width: '1280',
-                viewport_height: '800',
-                format: 'png',
-                full_page: 'true',
-                delay: '3',
-                block_ads: 'true',
-                block_cookie_banners: 'true',
-                image_quality: '80',
-                ignore_host_errors: 'true'
-            })
+        // Try screenshot first
+        if (SCREENSHOT_API_KEY) {
+            try {
+                const params = new URLSearchParams({
+                    access_key: SCREENSHOT_API_KEY,
+                    url: url,
+                    viewport_width: '1280',
+                    viewport_height: '800',
+                    format: 'png',
+                    full_page: 'true',
+                    delay: '3',
+                    block_ads: 'true',
+                    block_cookie_banners: 'true',
+                    image_quality: '80',
+                    ignore_host_errors: 'true'
+                })
 
-            const screenshotApiUrl = `https://api.screenshotone.com/take?${params.toString()}`
-            const screenshotResponse = await fetch(screenshotApiUrl)
+                const screenshotApiUrl = `https://api.screenshotone.com/take?${params.toString()}`
+                const screenshotResponse = await fetch(screenshotApiUrl)
 
-            if (screenshotResponse.ok) {
-                const arrayBuffer = await screenshotResponse.arrayBuffer()
-                screenshotBuffer = Buffer.from(arrayBuffer)
-                screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
-            } else {
-                const errorText = await screenshotResponse.text()
-                console.error('ScreenshotOne API error:', errorText)
-                return res.status(500).json({ error: 'Failed to capture screenshot' })
+                if (screenshotResponse.ok) {
+                    const arrayBuffer = await screenshotResponse.arrayBuffer()
+                    screenshotBuffer = Buffer.from(arrayBuffer)
+                    screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
+                    console.log('Screenshot captured successfully')
+                } else {
+                    const errorText = await screenshotResponse.text()
+                    console.error('ScreenshotOne API error:', errorText)
+                }
+            } catch (e) {
+                console.error('Screenshot failed:', e.message)
             }
-        } catch (e) {
-            console.error('Screenshot failed:', e.message)
-            return res.status(500).json({ error: 'Screenshot capture failed', message: e.message })
+        }
+
+        // Fallback: Try HTML extraction if screenshot failed
+        if (!screenshotBase64) {
+            console.log('Screenshot failed, trying HTML fallback...')
+            try {
+                const htmlResponse = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Sec-Fetch-Dest': 'document',
+                        'Sec-Fetch-Mode': 'navigate',
+                        'Sec-Fetch-Site': 'none',
+                        'Sec-Fetch-User': '?1',
+                        'Cache-Control': 'max-age=0'
+                    },
+                    redirect: 'follow'
+                })
+
+                if (htmlResponse.ok) {
+                    const html = await htmlResponse.text()
+                    htmlMetadata = extractMetadataFromHtml(html, url)
+                    console.log('HTML metadata extracted:', htmlMetadata.title)
+                } else {
+                    console.error('HTML fetch failed:', htmlResponse.status)
+                }
+            } catch (e) {
+                console.error('HTML fallback failed:', e.message)
+            }
+        }
+
+        // If both failed, return error
+        if (!screenshotBase64 && !htmlMetadata) {
+            return res.status(500).json({
+                error: 'Failed to capture website',
+                message: 'Both screenshot and HTML extraction failed'
+            })
         }
 
         // Step 2: Call AI for brand analysis (all info extracted from screenshot)
@@ -122,6 +222,7 @@ Guidelines:
         ]
 
         if (screenshotBase64) {
+            // Best case: We have a screenshot
             messages.push({
                 role: 'user',
                 content: [
@@ -129,10 +230,23 @@ Guidelines:
                     { type: 'image_url', image_url: { url: screenshotBase64 } }
                 ]
             })
-        } else {
+        } else if (htmlMetadata) {
+            // Fallback: Use HTML metadata for analysis
+            const metadataContext = `
+Website URL: ${url}
+Title: ${htmlMetadata.title || 'N/A'}
+Description: ${htmlMetadata.description || 'N/A'}
+Theme Color: ${htmlMetadata.themeColor || 'N/A'}
+Favicon: ${htmlMetadata.favicon || 'N/A'}
+OG Image: ${htmlMetadata.ogImage || 'N/A'}
+
+Note: Screenshot was not available. Please analyze based on the metadata above and your knowledge of this brand/website.
+For visualAreas, provide placeholder values since no screenshot is available.
+For colors, if theme-color is available use it as primary, otherwise make educated guesses based on the brand.`
+
             messages.push({
                 role: 'user',
-                content: `Analyze this website and extract the brand kit based on your knowledge: ${url}`
+                content: metadataContext
             })
         }
 
