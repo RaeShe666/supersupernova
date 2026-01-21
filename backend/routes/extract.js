@@ -23,63 +23,58 @@ router.get('/extract', async (req, res) => {
     }
 
     try {
-        // Step 1: Take full-page screenshot
+        // Step 1: Take full-page screenshot using ScreenshotOne
         let screenshotBase64 = null
         let screenshotBuffer = null
-        let metadata = {}
 
-        try {
-            const SCREENSHOT_API_KEY = process.env.SCREENSHOT_API_KEY
-            if (SCREENSHOT_API_KEY) {
-                const params = new URLSearchParams({
-                    access_key: SCREENSHOT_API_KEY,
-                    url: url,
-                    viewport_width: '1280',
-                    viewport_height: '800',
-                    format: 'png',
-                    full_page: 'true',
-                    delay: '3',
-                    block_ads: 'true',
-                    block_cookie_banners: 'true',
-                    image_quality: '80',
-                    ignore_host_errors: 'true'
-                })
-
-                const screenshotApiUrl = `https://api.screenshotone.com/take?${params.toString()}`
-                const screenshotResponse = await fetch(screenshotApiUrl)
-
-                if (screenshotResponse.ok) {
-                    const arrayBuffer = await screenshotResponse.arrayBuffer()
-                    screenshotBuffer = Buffer.from(arrayBuffer)
-                    screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
-                }
-            }
-
-            // Also extract metadata from HTML
-            const htmlResponse = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            })
-            if (htmlResponse.ok) {
-                const html = await htmlResponse.text()
-                const baseUrl = new URL(url).origin
-                metadata = extractMetadataFromHtml(html, baseUrl)
-            }
-        } catch (e) {
-            console.log('Screenshot/metadata failed, continuing:', e.message)
+        const SCREENSHOT_API_KEY = process.env.SCREENSHOT_API_KEY
+        if (!SCREENSHOT_API_KEY) {
+            return res.status(500).json({ error: 'Screenshot API key not configured' })
         }
 
-        // Step 2: Call AI for brand analysis
+        try {
+            const params = new URLSearchParams({
+                access_key: SCREENSHOT_API_KEY,
+                url: url,
+                viewport_width: '1280',
+                viewport_height: '800',
+                format: 'png',
+                full_page: 'true',
+                delay: '3',
+                block_ads: 'true',
+                block_cookie_banners: 'true',
+                image_quality: '80',
+                ignore_host_errors: 'true'
+            })
+
+            const screenshotApiUrl = `https://api.screenshotone.com/take?${params.toString()}`
+            const screenshotResponse = await fetch(screenshotApiUrl)
+
+            if (screenshotResponse.ok) {
+                const arrayBuffer = await screenshotResponse.arrayBuffer()
+                screenshotBuffer = Buffer.from(arrayBuffer)
+                screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
+            } else {
+                const errorText = await screenshotResponse.text()
+                console.error('ScreenshotOne API error:', errorText)
+                return res.status(500).json({ error: 'Failed to capture screenshot' })
+            }
+        } catch (e) {
+            console.error('Screenshot failed:', e.message)
+            return res.status(500).json({ error: 'Screenshot capture failed', message: e.message })
+        }
+
+        // Step 2: Call AI for brand analysis (all info extracted from screenshot)
         const systemPrompt = `You are a brand analyst expert. Analyze the given website screenshot and extract:
-1. Brand kit information (name, tagline, colors, typography, etc.)
+1. Brand kit information (name, tagline, colors, typography, logo description, etc.)
 2. Identify 3 key visual areas that best represent the brand's positioning, features, and highlights.
 
 Return your analysis as a JSON object with exactly this structure:
 {
     "brandIdentity": {
         "name": "Brand/Company/Product name",
-        "tagline": "Main tagline or slogan"
+        "tagline": "Main tagline or slogan",
+        "logoDescription": "Brief description of the logo if visible (e.g., 'Blue bird icon' or 'Letter N in black')"
     },
     "visualSystem": {
         "colors": ["#primary", "#secondary1", "#secondary2", "#secondary3"],
@@ -110,14 +105,16 @@ Return your analysis as a JSON object with exactly this structure:
             "yPercent": 45,
             "heightPercent": 20
         }
-    ]
+    ],
+    "antiCrawlDetected": false
 }
 
 Guidelines:
 - For colors: You MUST extract EXACTLY 4 colors that are actually used on the website. Analyze the screenshot carefully and identify the 4 most frequently used colors (primary brand color, secondary colors, accent colors, background colors). Do NOT use placeholder colors like #888888 or #000000 unless they are genuinely used. Each color must be a real color visible on the website.
-- For typography: Identify the primary font family used.
+- For typography: Identify the primary font family used based on visual appearance.
 - For baseAppearance: Choose the style that best matches the visual design.
 - For visualAreas: Identify exactly 3 areas. Use yPercent (0-100) for vertical position and heightPercent for height.
+- For antiCrawlDetected: Set to true ONLY if the screenshot shows an error page, access denied message, captcha, Cloudflare challenge, or any other anti-bot protection page instead of the actual website content.
 - Return ONLY valid JSON, no additional text.`
 
         const messages = [
@@ -214,14 +211,8 @@ Guidelines:
             delete brandKit.brandContext.tone
         }
 
-        // Detect anti-crawl page
-        const antiCrawlKeywords = ['access denied', 'forbidden', '403', 'blocked', 'captcha', 'robot', 'not allowed', 'error', 'cloudflare']
-        let isAntiCrawl = false
-
-        if (metadata.title) {
-            const titleLower = metadata.title.toLowerCase()
-            isAntiCrawl = antiCrawlKeywords.some(kw => titleLower.includes(kw))
-        }
+        // Detect anti-crawl from AI analysis
+        const isAntiCrawl = brandKit.antiCrawlDetected === true
 
         // If anti-crawl detected: clear colors, keep screenshot as visual image
         if (isAntiCrawl) {
@@ -239,13 +230,9 @@ Guidelines:
             brandKit.brandContext.images = visualImages.map(v => v.image)
         }
 
-        // Add logo from metadata
-        if (metadata.logoUrl || metadata.appleTouchIcon || metadata.favicon) {
-            brandKit.brandIdentity.logo = metadata.logoUrl || metadata.appleTouchIcon || metadata.favicon
-        }
-
-        // Remove visualAreas from response
+        // Remove internal fields from response
         delete brandKit.visualAreas
+        delete brandKit.antiCrawlDetected
 
         res.json({
             success: true,
@@ -264,50 +251,6 @@ Guidelines:
     }
 })
 
-// Helper functions
-function extractMetadataFromHtml(html, baseUrl) {
-    const getMatch = (pattern) => {
-        const match = pattern.exec(html)
-        return match ? match[1] : null
-    }
-
-    return {
-        title: getMatch(/<title[^>]*>([^<]+)<\/title>/i),
-        description: getMatch(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i),
-        logoUrl: extractLogoFromHtml(html, baseUrl),
-        favicon: resolveUrl(
-            getMatch(/<link[^>]*rel="icon"[^>]*href="([^"]+)"/i),
-            baseUrl
-        ),
-        appleTouchIcon: resolveUrl(
-            getMatch(/<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]+)"/i),
-            baseUrl
-        )
-    }
-}
-
-function extractLogoFromHtml(html, baseUrl) {
-    const imgPatterns = [
-        /<img[^>]*class="[^"]*logo[^"]*"[^>]*src="([^"]+)"/gi,
-        /<img[^>]*src="([^"]*logo[^"]*)"/gi
-    ]
-
-    for (const pattern of imgPatterns) {
-        const match = pattern.exec(html)
-        if (match && match[1]) {
-            return resolveUrl(match[1], baseUrl)
-        }
-    }
-    return null
-}
-
-function resolveUrl(src, baseUrl) {
-    if (!src) return null
-    if (src.startsWith('data:')) return src
-    if (src.startsWith('http')) return src
-    if (src.startsWith('//')) return 'https:' + src
-    if (src.startsWith('/')) return baseUrl + src
-    return baseUrl + '/' + src
-}
+// Note: HTML metadata extraction removed - all brand info now comes from AI screenshot analysis
 
 export default router

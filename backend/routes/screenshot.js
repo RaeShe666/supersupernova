@@ -50,28 +50,10 @@ router.get('/screenshot', async (req, res) => {
         const base64 = Buffer.from(arrayBuffer).toString('base64')
         const screenshotBase64 = `data:image/png;base64,${base64}`
 
-        // Extract metadata from HTML
-        let metadata = {}
-        try {
-            const htmlResponse = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            })
-            if (htmlResponse.ok) {
-                const html = await htmlResponse.text()
-                const baseUrl = new URL(url).origin
-                metadata = extractMetadataFromHtml(html, baseUrl)
-            }
-        } catch (e) {
-            console.log('Metadata extraction failed:', e.message)
-        }
-
         res.json({
             success: true,
             screenshot: screenshotBase64,
             screenshotSize: arrayBuffer.byteLength,
-            metadata: metadata,
             method: 'screenshotone-fullpage'
         })
 
@@ -84,61 +66,5 @@ router.get('/screenshot', async (req, res) => {
     }
 })
 
-// Extract metadata from HTML
-function extractMetadataFromHtml(html, baseUrl) {
-    const getMatch = (pattern) => {
-        const match = pattern.exec(html)
-        return match ? match[1] : null
-    }
-
-    return {
-        title: getMatch(/<title[^>]*>([^<]+)<\/title>/i),
-        description: getMatch(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i) ||
-            getMatch(/<meta[^>]*content="([^"]+)"[^>]*name="description"/i),
-        ogImage: resolveUrl(
-            getMatch(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i) ||
-            getMatch(/<meta[^>]*content="([^"]+)"[^>]*property="og:image"/i),
-            baseUrl
-        ),
-        ogTitle: getMatch(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i),
-        favicon: resolveUrl(
-            getMatch(/<link[^>]*rel="icon"[^>]*href="([^"]+)"/i) ||
-            getMatch(/<link[^>]*rel="shortcut icon"[^>]*href="([^"]+)"/i),
-            baseUrl
-        ),
-        appleTouchIcon: resolveUrl(
-            getMatch(/<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]+)"/i),
-            baseUrl
-        ),
-        logoUrl: extractLogoFromHtml(html, baseUrl),
-        h1: getMatch(/<h1[^>]*>([^<]+)<\/h1>/i)
-    }
-}
-
-function extractLogoFromHtml(html, baseUrl) {
-    const imgPatterns = [
-        /<img[^>]*class="[^"]*logo[^"]*"[^>]*src="([^"]+)"/gi,
-        /<img[^>]*src="([^"]*logo[^"]*)"/gi,
-        /<img[^>]*alt="[^"]*logo[^"]*"[^>]*src="([^"]+)"/gi,
-        /<img[^>]*src="([^"]+)"[^>]*class="[^"]*logo[^"]*"/gi
-    ]
-
-    for (const pattern of imgPatterns) {
-        const match = pattern.exec(html)
-        if (match && match[1]) {
-            return resolveUrl(match[1], baseUrl)
-        }
-    }
-    return null
-}
-
-function resolveUrl(src, baseUrl) {
-    if (!src) return null
-    if (src.startsWith('data:')) return src
-    if (src.startsWith('http')) return src
-    if (src.startsWith('//')) return 'https:' + src
-    if (src.startsWith('/')) return baseUrl + src
-    return baseUrl + '/' + src
-}
-
 export default router
+
