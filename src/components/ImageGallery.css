@@ -26,22 +26,20 @@
 
 .gallery-remove-btn {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 36px;
-    height: 36px;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.6);
     border: none;
     border-radius: 50%;
-    color: #43a7f9;
+    color: #fff;
     cursor: pointer;
     opacity: 0;
     transition: all var(--transition-fast);
-    box-shadow: var(--shadow-md);
 }
 
 .gallery-item:hover .gallery-remove-btn {
@@ -49,8 +47,8 @@
 }
 
 .gallery-remove-btn:hover {
-    background: rgba(255, 255, 255, 0.95);
-    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
 }
 
 /* Add Button */
@@ -84,4 +82,59 @@
     font-size: 0.75rem;
     color: var(--text-muted);
     text-align: right;
+}
+
+/* Image Lightbox - 居中浮层显示，与 FontPicker 逻辑一致 */
+.image-lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-lightbox {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #2a2a2a;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    padding-bottom: 60px;
+}
+
+.image-lightbox img {
+    max-width: 80vw;
+    max-height: 70vh;
+    object-fit: contain;
+    display: block;
+    border-radius: 8px;
+}
+
+.lightbox-close-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    color: var(--primary-dark);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lightbox-close-btn:hover {
+    opacity: 0.8;
 }

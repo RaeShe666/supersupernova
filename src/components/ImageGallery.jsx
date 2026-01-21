@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import './ImageGallery.css'
 
 // 压缩图片到指定大小
@@ -34,8 +34,47 @@ function compressImage(file, maxWidth = 300, quality = 0.7) {
     })
 }
 
+// Image Lightbox Component - 点击图片放大显示的浮层
+function ImageLightbox({ image, onClose }) {
+    const lightboxRef = useRef(null)
+
+    // Click outside to close
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (lightboxRef.current && !lightboxRef.current.contains(e.target)) {
+                onClose()
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [onClose])
+
+    // ESC key to close
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose()
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [onClose])
+
+    return (
+        <div className="image-lightbox-overlay">
+            <div className="image-lightbox" ref={lightboxRef}>
+                <img src={image} alt="Full size preview" />
+                <button className="lightbox-close-btn" onClick={onClose}>
+                    Close
+                </button>
+            </div>
+        </div>
+    )
+}
+
 function ImageGallery({ images, onAdd, onRemove, maxImages }) {
     const inputRef = useRef(null)
+    const [lightboxImage, setLightboxImage] = useState(null)
 
     const handleClick = () => {
         if (images.length < maxImages) {
@@ -58,6 +97,12 @@ function ImageGallery({ images, onAdd, onRemove, maxImages }) {
         e.target.value = ''
     }
 
+    const handleImageClick = (image, e) => {
+        // 阻止冒泡，避免触发其他事件
+        e.stopPropagation()
+        setLightboxImage(image)
+    }
+
     return (
         <div className="image-gallery">
             <input
@@ -72,14 +117,22 @@ function ImageGallery({ images, onAdd, onRemove, maxImages }) {
                 {/* Existing Images */}
                 {images.map((image, index) => (
                     <div key={index} className="gallery-item">
-                        <img src={image} alt={`Visual ${index + 1}`} />
+                        <img
+                            src={image}
+                            alt={`Visual ${index + 1}`}
+                            onClick={(e) => handleImageClick(image, e)}
+                            style={{ cursor: 'pointer' }}
+                        />
                         <button
                             className="gallery-remove-btn"
-                            onClick={() => onRemove(index)}
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                onRemove(index)
+                            }}
                         >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="3,6 5,6 21,6" />
-                                <path d="M19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2" />
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         </button>
                     </div>
@@ -98,8 +151,17 @@ function ImageGallery({ images, onAdd, onRemove, maxImages }) {
             </div>
 
             <span className="gallery-count">{images.length}/{maxImages}</span>
+
+            {/* Image Lightbox */}
+            {lightboxImage && (
+                <ImageLightbox
+                    image={lightboxImage}
+                    onClose={() => setLightboxImage(null)}
+                />
+            )}
         </div>
     )
 }
 
 export default ImageGallery
+

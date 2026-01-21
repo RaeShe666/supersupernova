@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ImageGallery from './ImageGallery'
 import './BrandContext.css'
 
@@ -6,9 +6,19 @@ function BrandContext({ data, onChange }) {
     const [newKeyword, setNewKeyword] = useState('')
     const [newTone, setNewTone] = useState('')
 
+    // Track if user ever had images (from AI or upload) - once true, stays true
+    const everHadImages = useRef(false)
+
     const keywords = data?.keywords || []
     const tones = data?.tones || []
     const images = data?.images || []
+
+    // Update everHadImages when images exist
+    useEffect(() => {
+        if (images.length > 0) {
+            everHadImages.current = true
+        }
+    }, [images])
 
     // Keywords handlers
     const handleAddKeyword = () => {
@@ -58,6 +68,9 @@ function BrandContext({ data, onChange }) {
     const handleRemoveImage = (index) => {
         onChange({ images: images.filter((_, i) => i !== index) })
     }
+
+    // Only show error if no images AND never had any images (AI failed to capture)
+    const showCaptureError = images.length === 0 && !everHadImages.current
 
     return (
         <div className="brand-context">
@@ -160,7 +173,7 @@ function BrandContext({ data, onChange }) {
                         onRemove={handleRemoveImage}
                         maxImages={6}
                     />
-                    {images.length === 0 && (
+                    {showCaptureError && (
                         <p className="field-hint" style={{ textAlign: 'center', marginTop: '3px', color: '#bc3b18ff' }}>
                             Unable to capture website screenshot
                         </p>

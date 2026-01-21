@@ -13,24 +13,43 @@
     margin-top: -4px;
 }
 
-/* Color System - 4 colors */
+/* Color System - 4 colors - 响应式 */
 .color-system {
+    container-type: inline-size;
+    /* 声明为容器 */
     display: flex;
-    gap: 30px;
-    justify-content: center;
-    padding: 20px;
+    justify-content: space-evenly;
+    /* 均匀分布 */
+    align-items: center;
+    padding: 14px 8px 8px 8px;
     border: 1px solid var(--border-light);
     border-radius: 12px;
     background: white;
+    overflow-x: auto;
+    /* 极端情况可滚动 */
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    /* 不换行 */
+}
+
+/* 隐藏滚动条但保留功能 */
+.color-system::-webkit-scrollbar {
+    display: none;
 }
 
 .color-item {
     position: relative;
+    flex-shrink: 1;
+    /* 允许收缩 */
 }
 
 .color-dot {
-    width: 48px;
-    height: 48px;
+    /* 备用方案（不支持cqw的浏览器） */
+    width: min(48px, max(24px, 4vw));
+    height: min(48px, max(24px, 4vw));
+    /* 基于容器宽度的响应式尺寸：最小24px，理想15%，最大48px */
+    width: clamp(24px, 15cqw, 48px);
+    height: clamp(24px, 15cqw, 48px);
     border-radius: 50%;
     border: none;
     box-shadow: 0 2px 8px rgba(97, 96, 96, 0.15);

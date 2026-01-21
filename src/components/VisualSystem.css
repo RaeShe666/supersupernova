@@ -7,12 +7,15 @@
     margin-bottom: 24px;
 }
 
-/* Base Appearance Grid - 一排两个，固定宽度，居中 */
+/* Base Appearance Grid - 响应式布局 */
 .appearance-grid {
     display: grid;
-    grid-template-columns: repeat(2, 155px);
-    column-gap: 23px;
-    row-gap: 25px;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 8%;
+    row-gap: 8%;
+    /* 水平与垂直间距 - 响应式 */
+    padding: 0 3% 16px 3%;
+    /* 左右和底部内边距 - 响应式 */
     justify-content: center;
 }
 
@@ -41,10 +44,11 @@
     background: var(--gray-50);
 }
 
-/* 缩略图容器 */
+/* 缩略图容器 - 响应式 */
 .appearance-thumbnail {
-    width: 130px;
-    height: 110px;
+    width: 100%;
+    aspect-ratio: 4/3;
+    height: auto;
     border-radius: 6px;
     overflow: hidden;
     margin-bottom: 6px;
