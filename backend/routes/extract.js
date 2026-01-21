@@ -66,6 +66,44 @@ function resolveUrl(url, baseUrl) {
     }
 }
 
+// Helper: Extract logo URL from HTML
+function extractLogoFromHtml(html, baseUrl) {
+    // Priority 1: Apple touch icon (usually high quality)
+    const appleTouchMatch = html.match(/<link[^>]+rel=["']apple-touch-icon["'][^>]+href=["']([^"']+)["']/i)
+        || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']apple-touch-icon["']/i)
+    if (appleTouchMatch) {
+        return resolveUrl(appleTouchMatch[1], baseUrl)
+    }
+
+    // Priority 2: Large favicon (32x32 or larger)
+    const largeFaviconMatch = html.match(/<link[^>]+rel=["']icon["'][^>]+sizes=["'](?:32x32|48x48|64x64|96x96|128x128|192x192|256x256|512x512)["'][^>]+href=["']([^"']+)["']/i)
+    if (largeFaviconMatch) {
+        return resolveUrl(largeFaviconMatch[1], baseUrl)
+    }
+
+    // Priority 3: Standard favicon
+    const faviconMatch = html.match(/<link[^>]+rel=["'](?:icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i)
+        || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:icon|shortcut icon)["']/i)
+    if (faviconMatch) {
+        return resolveUrl(faviconMatch[1], baseUrl)
+    }
+
+    // Priority 4: Img tag with logo class or id
+    const logoImgMatch = html.match(/<img[^>]+(?:class|id)=["'][^"']*logo[^"']*["'][^>]+src=["']([^"']+)["']/i)
+        || html.match(/<img[^>]+src=["']([^"']+)["'][^>]+(?:class|id)=["'][^"']*logo[^"']*["']/i)
+    if (logoImgMatch) {
+        return resolveUrl(logoImgMatch[1], baseUrl)
+    }
+
+    // Fallback: default favicon path
+    try {
+        const urlObj = new URL(baseUrl)
+        return `${urlObj.origin}/favicon.ico`
+    } catch (e) {
+        return null
+    }
+}
+
 router.get('/extract', async (req, res) => {
     const url = req.query.url
 
@@ -166,15 +204,14 @@ router.get('/extract', async (req, res) => {
 
         // Step 2: Call AI for brand analysis (all info extracted from screenshot)
         const systemPrompt = `You are a brand analyst expert. Analyze the given website screenshot and extract:
-1. Brand kit information (name, tagline, colors, typography, logo description, etc.)
+1. Brand kit information (name, tagline, colors, typography, etc.)
 2. Identify 3 key visual areas that best represent the brand's positioning, features, and highlights.
 
 Return your analysis as a JSON object with exactly this structure:
 {
     "brandIdentity": {
         "name": "Brand/Company/Product name",
-        "tagline": "Main tagline or slogan",
-        "logoDescription": "Brief description of the logo if visible (e.g., 'Blue bird icon' or 'Letter N in black')"
+        "tagline": "Main tagline or slogan"
     },
     "visualSystem": {
         "colors": ["#primary", "#secondary1", "#secondary2", "#secondary3"],
@@ -342,6 +379,31 @@ For colors, if theme-color is available use it as primary, otherwise make educat
             }
             // Add visual images to brandContext
             brandKit.brandContext.images = visualImages.map(v => v.image)
+
+            // Try to extract logo from HTML (non-blocking, doesn't affect main extraction)
+            try {
+                const htmlResponse = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.9'
+                    },
+                    redirect: 'follow',
+                    signal: AbortSignal.timeout(5000)  // 5 second timeout
+                })
+
+                if (htmlResponse.ok) {
+                    const html = await htmlResponse.text()
+                    const logoUrl = extractLogoFromHtml(html, url)
+                    if (logoUrl) {
+                        brandKit.brandIdentity.logo = logoUrl
+                        console.log('Logo extracted from HTML:', logoUrl)
+                    }
+                }
+            } catch (logoError) {
+                // Logo extraction failure is non-fatal
+                console.log('Logo extraction skipped:', logoError.message)
+            }
         }
 
         // Remove internal fields from response
