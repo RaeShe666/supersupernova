@@ -22,13 +22,16 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true)
 
-        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        if (allowedOrigins.includes(origin) ||
+            origin.endsWith('.vercel.app') ||
+            origin.endsWith('.sylailabs.com') ||
+            origin === 'https://sylailabs.com') {
             return callback(null, true)
         }
         callback(new Error('Not allowed by CORS'))
     },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
+    allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 app.use(express.json())
