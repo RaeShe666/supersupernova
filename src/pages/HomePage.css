@@ -58,8 +58,18 @@
     font-weight: 700;
     letter-spacing: -0.02em;
     color: #1a2e22;
+    color: #1a2e22;
     cursor: pointer;
     transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-logo-img {
+    height: 55px;
+    width: auto;
+    object-fit: contain;
 }
 
 .brand-logo:hover {

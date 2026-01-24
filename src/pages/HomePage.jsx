@@ -75,7 +75,10 @@ function HomePage({ projects, onExtract, onEditProject, onDeleteProject, isExtra
 
             {/* Header */}
             <header className="app-header">
-                <div className="brand-logo">SYL.AILABS</div>
+                <div className="brand-logo">
+                    <img src="/logo-home1.png" alt="Logo" className="header-logo-img" />
+                    SYL.AILABS
+                </div>
 
                 <nav className="header-nav">
                     {user ? (
