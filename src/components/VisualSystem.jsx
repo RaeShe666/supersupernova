@@ -5,32 +5,27 @@ const APPEARANCE_OPTIONS = [
     {
         id: 'clean-minimal',
         name: 'Clean Minimal',
-        gradient: 'linear-gradient(135deg, #FFF8F6, #FFEEE9)',
-        icon: '□'
+        image: '/clean-minimal.jpg'
     },
     {
         id: 'gradient',
         name: 'Gradient',
-        gradient: 'linear-gradient(135deg, #FF9A6C, #FF6B95, #A855F7)',
-        icon: '◐'
+        image: '/gradient.jpg'
     },
     {
         id: 'frosted-glass',
         name: 'Frosted Glass',
-        gradient: 'linear-gradient(135deg, rgba(255,255,255,0.8), rgba(200,220,240,0.6))',
-        icon: '◇'
+        image: '/frosted-glass.jpg'
     },
     {
         id: 'retro-grain',
         name: 'Retro Grain',
-        gradient: 'linear-gradient(135deg, #E8B4A0, #D4A574)',
-        icon: '▤'
+        image: '/retro-grain.jpg'
     },
     {
         id: '3d-volume',
         name: '3D Volume',
-        gradient: 'linear-gradient(135deg, #C4D6E8, #9DB5D1, #7AA3C7)',
-        icon: '◆'
+        image: '/3d-volume.jpg'
     }
 ]
 
@@ -176,13 +171,7 @@ function VisualSystem({ data, onChange }) {
                             onClick={() => onChange({ baseAppearance: option.id })}
                         >
                             <div className="appearance-thumbnail">
-                                {option.isCustom ? (
-                                    <img src={option.image} alt={option.name} className="custom-thumbnail-img" />
-                                ) : (
-                                    <div className="gradient-thumbnail" style={{ background: option.gradient }}>
-                                        <span className="appearance-icon">{option.icon}</span>
-                                    </div>
-                                )}
+                                <img src={option.image} alt={option.name} className="custom-thumbnail-img" />
                             </div>
                             <span className="appearance-name">{option.name}</span>
 

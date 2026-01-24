@@ -10,6 +10,7 @@
     "save": "git add . && git commit -m \"auto update\" && git push"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.91.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

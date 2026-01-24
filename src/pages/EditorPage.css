@@ -44,6 +44,51 @@
     transform: translateY(-1px);
 }
 
+/* Save Status Indicator */
+.save-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    min-width: 120px;
+    justify-content: flex-end;
+}
+
+.status-saving {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+}
+
+.status-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.status-saved {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #22c55e;
+    font-weight: 500;
+}
+
+.status-unsaved {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
 .header-center {
     position: absolute;
     left: 50%;

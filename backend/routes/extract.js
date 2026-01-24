@@ -3,6 +3,7 @@
 
 import { Router } from 'express'
 import sharp from 'sharp'
+import { authenticateUser } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -104,7 +105,7 @@ function extractLogoFromHtml(html, baseUrl) {
     }
 }
 
-router.get('/extract', async (req, res) => {
+router.get('/extract', authenticateUser, async (req, res) => {
     const url = req.query.url
 
     if (!url) {

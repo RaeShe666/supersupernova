@@ -14,11 +14,11 @@ const isProduction = window.location.hostname !== 'localhost'
 /**
  * Main extraction function
  */
-export async function extractBrandKit(websiteUrl) {
+export async function extractBrandKit(websiteUrl, token = null) {
     try {
         if (isProduction) {
             // Production: Use backend API (secure, with screenshot)
-            return await extractViaBackend(websiteUrl)
+            return await extractViaBackend(websiteUrl, token)
         } else {
             // Development: Direct API call (for testing)
             return await extractDirectly(websiteUrl)
@@ -32,8 +32,15 @@ export async function extractBrandKit(websiteUrl) {
 /**
  * Extract via backend API (production)
  */
-async function extractViaBackend(websiteUrl) {
-    const response = await fetch(`${BACKEND_API_URL}/api/extract?url=${encodeURIComponent(websiteUrl)}`)
+async function extractViaBackend(websiteUrl, token) {
+    const headers = {}
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${BACKEND_API_URL}/api/extract?url=${encodeURIComponent(websiteUrl)}`, {
+        headers
+    })
 
     if (!response.ok) {
         throw new Error('Backend extraction failed')
