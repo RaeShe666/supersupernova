@@ -1,5 +1,249 @@
 /* App Container */
 .app {
     min-height: 100vh;
-    background: var(--bg-secondary);
+    background: #F0F2F0;
+}
+
+/* ===== GLOBAL TOP NAV ===== */
+.global-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    height: 56px;
+    background: rgba(240, 242, 240, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(46, 92, 70, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    font-family: var(--font-mono);
+}
+
+.global-nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1a2e22;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.global-nav-brand:hover {
+    color: #2E5C46;
+}
+
+.global-nav-logo {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+}
+
+.global-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.global-nav-link {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.global-nav-link:hover {
+    color: #1a2e22;
+    background: rgba(46, 92, 70, 0.08);
+}
+
+.global-nav-link.active {
+    color: #1a2e22;
+    background: rgba(46, 92, 70, 0.12);
+    font-weight: 600;
+}
+
+.global-nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.global-nav-auth {
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: #2E5C46;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: opacity 0.2s;
+}
+
+.global-nav-auth:hover {
+    opacity: 0.7;
+}
+
+/* User Menu in Global Nav */
+.global-user-menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #2E5C46;
+    position: relative;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.global-user-menu:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.global-user-dot {
+    width: 7px;
+    height: 7px;
+    background: #2E5C46;
+    border-radius: 50%;
+    animation: globalPulse 3s infinite;
+}
+
+@keyframes globalPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.global-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    min-width: 200px;
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 8px 0;
+    z-index: 1000;
+}
+
+.global-dropdown-info {
+    padding: 8px 16px;
+    text-align: center;
+}
+
+.global-dropdown-name {
+    font-weight: 600;
+    color: #1a2e22;
+    font-size: 14px;
+}
+
+.global-dropdown-email {
+    color: #666;
+    font-size: 13px;
+    font-family: var(--font-mono);
+}
+
+.global-dropdown-divider {
+    height: 1px;
+    background: #e5e5e5;
+    margin: 8px 0;
+}
+
+.global-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    font-family: var(--font-mono);
+}
+
+.global-dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+/* App Body — offset for fixed nav */
+.app-body {
+    padding-top: 56px;
+}
+
+/* Landing Page */
+.landing-page {
+    min-height: calc(100vh - 56px);
+    background: #F0F2F0;
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-text {
+    text-align: left;
+    padding: 40px 64px 0;
+    max-width: 960px;
+}
+
+.typewriter-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.landing-line {
+    font-family: 'Special Elite', cursive;
+    font-size: 28px;
+    letter-spacing: 0.01em;
+    color: #1a2e22;
+    line-height: 1.6;
+    min-height: 1.6em;
+}
+
+.typewriter-cursor {
+    font-weight: 400;
+    animation: cursorBlink 0.6s step-end infinite;
+    color: #2E5C46;
+}
+
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Placeholder Pages (Chirp etc.) */
+.placeholder-page {
+    min-height: calc(100vh - 56px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F0F2F0;
+}
+
+.placeholder-content {
+    text-align: center;
+    font-family: var(--font-mono);
+}
+
+.placeholder-content h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a2e22;
+    margin-bottom: 8px;
+}
+
+.placeholder-content p {
+    font-size: 14px;
+    color: #9CA3AF;
 }

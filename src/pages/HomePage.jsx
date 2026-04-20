@@ -8,21 +8,17 @@ const SCROLL_STORAGE_KEY = 'homepage_scroll_position'
 
 function HomePage({ projects, onExtract, onEditProject, onDeleteProject, isExtracting }) {
     const [url, setUrl] = useState('')
-    const { user, signOut } = useAuth()
-    const [showUserMenu, setShowUserMenu] = useState(false)
+    const { user } = useAuth()
 
-    // Restore scroll position on mount
     useEffect(() => {
         const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY)
         if (savedScroll) {
-            // Use requestAnimationFrame to ensure DOM is ready
             requestAnimationFrame(() => {
                 window.scrollTo(0, parseInt(savedScroll, 10))
             })
         }
     }, [])
 
-    // Save scroll position on scroll
     useEffect(() => {
         const handleScroll = () => {
             sessionStorage.setItem(SCROLL_STORAGE_KEY, window.scrollY.toString())
@@ -35,28 +31,16 @@ function HomePage({ projects, onExtract, onEditProject, onDeleteProject, isExtra
     const handleExtract = (e) => {
         e.preventDefault()
         if (url.trim()) {
-            // If not logged in, redirect to login
             if (!user) {
                 window.location.hash = '/login'
                 return
             }
-            // If logged in, proceed with extraction
             onExtract(url.trim())
-        }
-    }
-
-    const handleSignOut = async () => {
-        try {
-            await signOut()
-            setShowUserMenu(false)
-        } catch (error) {
-            console.error('Error signing out:', error)
         }
     }
 
     return (
         <div className="home-page">
-            {/* SVG Filter Definitions (Hidden) */}
             <svg className="svg-filters">
                 <defs>
                     <filter id="squiggly-0">
@@ -70,51 +54,8 @@ function HomePage({ projects, onExtract, onEditProject, onDeleteProject, isExtra
                 </defs>
             </svg>
 
-            {/* Global Noise Texture */}
             <div className="global-noise"></div>
 
-            {/* Header */}
-            <header className="app-header">
-                <div className="brand-logo">
-                    <img src="/logo-home1.png" alt="Logo" className="header-logo-img" />
-                    SYL.AILABS
-                </div>
-
-                <nav className="header-nav">
-                    {user ? (
-                        <div
-                            className="user-account"
-                            onClick={() => setShowUserMenu(!showUserMenu)}
-                        >
-                            <div className="user-status-dot"></div>
-                            <span>{user.displayName || user.email.split('@')[0] || 'ACCOUNT_01'}</span>
-
-                            {showUserMenu && (
-                                <div className="dropdown-menu">
-                                    {user.displayName && (
-                                        <div className="dropdown-user-info">
-                                            <span className="dropdown-username">{user.displayName}</span>
-                                        </div>
-                                    )}
-                                    <div className="dropdown-user-info">
-                                        <span className="dropdown-email">{user.email}</span>
-                                    </div>
-                                    <div className="dropdown-divider"></div>
-                                    <button className="dropdown-item" onClick={handleSignOut}>
-                                        Sign Out
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="auth-buttons">
-                            <a href="#/login" className="auth-btn-text">[ Sign In ]</a>
-                        </div>
-                    )}
-                </nav>
-            </header>
-
-            {/* Main Content */}
             <main className="main-content">
 
                 {/* 1. Experiments Section */}

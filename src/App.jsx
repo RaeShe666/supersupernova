@@ -1,47 +1,43 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { supabase } from './supabaseClient'
 import HomePage from './pages/HomePage'
 import EditorPage from './pages/EditorPage'
 import LoginPage from './pages/LoginPage'
 import { extractBrandKit } from './services/aiService'
+import StarField from './components/StarField'
 import './App.css'
 
-// Parse hash route
-const getRouteFromHash = () => {
-  const hash = window.location.hash.slice(1) || '/home'
+const parseRoute = () => {
+  const hash = window.location.hash.slice(1) || '/'
   const parts = hash.split('/').filter(Boolean)
+  // Routes: / (landing), brandkit (brand kit home), brandkit/editor/:id, chirp, login
   return {
-    page: parts[0] || 'home',
-    projectId: parts[1] || null
+    section: parts[0] || 'landing',
+    page: parts[1] || null,
+    id: parts[2] || null
   }
 }
 
-// Navigate to a route
-const navigateTo = (page, projectId = null) => {
-  if (projectId) {
-    window.location.hash = `/${page}/${projectId}`
-  } else {
-    window.location.hash = `/${page}`
-  }
+const navigateTo = (...segments) => {
+  window.location.hash = '/' + segments.filter(Boolean).join('/')
 }
 
 function AppContent() {
   const { user, loading, getAccessToken, signOut } = useAuth()
-  const initialRoute = getRouteFromHash()
-  const [currentPage, setCurrentPage] = useState(initialRoute.page)
+  const route = parseRoute()
+  const [currentSection, setCurrentSection] = useState(route.section)
+  const [currentPage, setCurrentPage] = useState(route.page)
+  const [currentId, setCurrentId] = useState(route.id)
   const [projects, setProjects] = useState([])
   const [currentProject, setCurrentProject] = useState(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
   const projectsLoadedRef = useRef(false)
-  const pendingRouteRef = useRef(null)
-  // Track if we're waiting for editor project to load
   const initialEditorProjectId = useRef(
-    initialRoute.page === 'editor' ? initialRoute.projectId : null
+    route.section === 'brandkit' && route.page === 'editor' ? route.id : null
   )
 
-  // Load projects from Supabase when user logged in
   useEffect(() => {
     if (!user) {
       setProjects([])
@@ -59,7 +55,6 @@ function AppContent() {
 
         if (error) throw error
 
-        // Transform Supabase data to app format
         const transformed = data.map(p => ({
           id: p.id,
           url: p.url,
@@ -70,22 +65,23 @@ function AppContent() {
         setProjects(transformed)
         projectsLoadedRef.current = true
 
-        // After loading projects, restore editor state from URL
-        const route = getRouteFromHash()
-        if (route.page === 'editor' && route.projectId) {
-          const project = transformed.find(p => p.id === route.projectId)
+        const r = parseRoute()
+        if (r.section === 'brandkit' && r.page === 'editor' && r.id) {
+          const project = transformed.find(p => p.id === r.id)
           if (project) {
             setCurrentProject(project)
+            setCurrentSection('brandkit')
             setCurrentPage('editor')
+            setCurrentId(r.id)
           } else {
-            // Project not found, go home
             initialEditorProjectId.current = null
-            navigateTo('home')
+            navigateTo('brandkit')
           }
         } else {
-          setCurrentPage(route.page)
+          setCurrentSection(r.section)
+          setCurrentPage(r.page)
+          setCurrentId(r.id)
         }
-        // Clear the initial editor flag after loading
         initialEditorProjectId.current = null
       } catch (err) {
         console.error('Failed to load projects:', err)
@@ -97,59 +93,49 @@ function AppContent() {
     loadProjects()
   }, [user])
 
-  // Sync projects state to Ref for event handlers
   const projectsStateRef = useRef(projects)
   useEffect(() => {
     projectsStateRef.current = projects
   }, [projects])
 
-  // Handle hash change (browser back/forward)
   useEffect(() => {
     const handleHashChange = () => {
-      const route = getRouteFromHash()
+      const r = parseRoute()
 
-      // If projects not loaded yet (initial load), save pending route
-      if (!projectsLoadedRef.current && route.page === 'editor' && route.projectId) {
-        pendingRouteRef.current = route
+      if (!projectsLoadedRef.current && r.section === 'brandkit' && r.page === 'editor' && r.id) {
         return
       }
 
-      setCurrentPage(route.page)
+      setCurrentSection(r.section)
+      setCurrentPage(r.page)
+      setCurrentId(r.id)
 
-      if (route.page === 'editor' && route.projectId) {
-        // Use Ref to get latest state during event callback
-        const project = projectsStateRef.current.find(p => p.id === route.projectId)
+      if (r.section === 'brandkit' && r.page === 'editor' && r.id) {
+        const project = projectsStateRef.current.find(p => p.id === r.id)
         setCurrentProject(project || null)
         if (!project) {
-          // Project not found, go home
-          navigateTo('home')
+          navigateTo('brandkit')
         }
       } else {
         setCurrentProject(null)
       }
     }
 
-    // Set initial hash if empty
     if (!window.location.hash) {
-      window.location.hash = '/home'
+      window.location.hash = '/'
     }
 
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
-  }, []) // Empty dependency array, relies on Ref for state access
+  }, [])
 
-  // Handle URL extraction
   const handleExtract = async (url) => {
     setIsExtracting(true)
 
     try {
-      // Get access token for backend authentication
       const token = await getAccessToken()
-
-      // Call AI service to extract brand kit
       const extractedData = await extractBrandKit(url, token)
 
-      // Create a new project with extracted data
       const projectData = {
         brandIdentity: {
           name: extractedData.brandIdentity?.name || '',
@@ -169,7 +155,6 @@ function AppContent() {
         }
       }
 
-      // Save to Supabase
       const { data: inserted, error } = await supabase
         .from('projects')
         .insert({
@@ -193,14 +178,11 @@ function AppContent() {
 
       const updatedProjects = [newProject, ...projects]
       setProjects(updatedProjects)
-      // Update ref immediately so hash change handler can find the project
       projectsStateRef.current = updatedProjects
       setCurrentProject(newProject)
-      // Navigate using hash
-      navigateTo('editor', newProject.id)
+      navigateTo('brandkit', 'editor', newProject.id)
     } catch (error) {
       console.error('Extraction failed:', error)
-      // Still create a blank project on error
       const blankProjectData = {
         brandIdentity: { name: '', logo: null, tagline: '', colors: ['#FF6B4A', '#4A7BF7', '#22C55E', '#9333EA'], typography: 'Inter' },
         visualSystem: { baseAppearance: 'clean-minimal' },
@@ -229,10 +211,9 @@ function AppContent() {
           }
           const updatedProjects = [newProject, ...projects]
           setProjects(updatedProjects)
-          // Update ref immediately so hash change handler can find the project
           projectsStateRef.current = updatedProjects
           setCurrentProject(newProject)
-          navigateTo('editor', newProject.id)
+          navigateTo('brandkit', 'editor', newProject.id)
         }
       } catch (e) {
         console.error('Failed to create blank project:', e)
@@ -242,9 +223,7 @@ function AppContent() {
     }
   }
 
-  // Handle save project to Supabase
   const handleSaveProject = async (projectData) => {
-    // Update local state immediately
     const existingIndex = projects.findIndex(p => p.id === projectData.id)
     if (existingIndex >= 0) {
       const updated = [...projects]
@@ -254,34 +233,25 @@ function AppContent() {
     setCurrentProject(projectData)
   }
 
-  // Handle edit project
   const handleEditProject = (project) => {
     setCurrentProject(project)
-    navigateTo('editor', project.id)
+    navigateTo('brandkit', 'editor', project.id)
   }
 
-  // Handle delete project
   const handleDeleteProject = async (projectId, isRetry = false) => {
-    console.log('Deleting project:', projectId, isRetry ? '(retry)' : '')
     const originalProjects = [...projects]
 
-    // Check and refresh session if needed
     let { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      console.log('No session, attempting refresh...')
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
       if (refreshError || !refreshData.session) {
-        console.error('Session refresh failed:', refreshError)
         alert('登录已过期，请重新登录')
         navigateTo('login')
         return
       }
       session = refreshData.session
-      console.log('Session refreshed successfully')
     }
-    console.log('Session valid, expires at:', new Date(session.expires_at * 1000).toLocaleString())
 
-    // Optimistic update
     setProjects(projects.filter(p => p.id !== projectId))
 
     try {
@@ -291,49 +261,37 @@ function AppContent() {
         .eq('id', projectId)
         .select()
 
-      console.log('Delete result:', { data, error, rowsAffected: data?.length || 0 })
-
       if (error) {
-        console.error('Failed to delete from Supabase:', error)
         setProjects(originalProjects)
         alert('Delete failed: ' + error.message)
       } else if (!data || data.length === 0) {
-        // No rows deleted - try refreshing token and retry once
         if (!isRetry) {
-          console.log('No rows affected, refreshing token and retrying...')
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
           if (!refreshError && refreshData.session) {
-            setProjects(originalProjects) // Restore before retry
+            setProjects(originalProjects)
             return handleDeleteProject(projectId, true)
           }
         }
-        console.error('Delete failed: No rows affected after retry')
         setProjects(originalProjects)
         alert('删除失败，请重新登录后重试')
-      } else {
-        console.log('Project deleted successfully:', data[0]?.id)
       }
     } catch (err) {
-      console.error('Delete error:', err)
       setProjects(originalProjects)
       alert('Delete error: ' + err.message)
     }
   }
 
-  // Handle back to home
   const handleBack = () => {
     setCurrentProject(null)
-    navigateTo('home')
+    navigateTo('brandkit')
   }
 
-  // Handle sign out
   const handleSignOut = async () => {
     await signOut()
-    navigateTo('home')
+    navigateTo()
   }
 
-  // Show loading while checking auth or waiting for editor project
-  const isWaitingForEditorProject = currentPage === 'editor' && !currentProject && initialEditorProjectId.current
+  const isWaitingForEditorProject = currentSection === 'brandkit' && currentPage === 'editor' && !currentProject && initialEditorProjectId.current
   if (loading || dataLoading || isWaitingForEditorProject) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -345,25 +303,26 @@ function AppContent() {
     )
   }
 
-  // Show login page only when explicitly navigating to it
-  if (currentPage === 'login' && !user) {
+  if (currentSection === 'login' && !user) {
     return <LoginPage />
   }
 
-  // Redirect to home if trying to access login while already logged in
-  if (currentPage === 'login' && user) {
-    navigateTo('home')
+  if (currentSection === 'login' && user) {
+    navigateTo()
   }
 
-  return (
-    <div className="app">
-      {currentPage === 'editor' && currentProject ? (
-        <EditorPage
-          project={currentProject}
-          onSave={handleSaveProject}
-          onBack={handleBack}
-        />
-      ) : (
+  const renderContent = () => {
+    if (currentSection === 'brandkit') {
+      if (currentPage === 'editor' && currentProject) {
+        return (
+          <EditorPage
+            project={currentProject}
+            onSave={handleSaveProject}
+            onBack={handleBack}
+          />
+        )
+      }
+      return (
         <HomePage
           projects={projects}
           onExtract={handleExtract}
@@ -373,6 +332,132 @@ function AppContent() {
           user={user}
           onSignOut={handleSignOut}
         />
+      )
+    }
+
+    if (currentSection === 'chirp') {
+      return (
+        <div className="placeholder-page">
+          <div className="placeholder-content">
+            <h2>Chirp</h2>
+            <p>Coming soon</p>
+          </div>
+        </div>
+      )
+    }
+
+    // Landing page
+    return (
+      <div className="landing-page">
+        <div className="landing-text">
+          <Typewriter lines={[
+            'Something is made here.',
+            'Smart as the builder, you know what it is.',
+            'Leave a trace, or click above.'
+          ]} />
+        </div>
+        <StarField />
+      </div>
+    )
+  }
+
+  return (
+    <div className="app">
+      {/* Global Top Nav */}
+      <nav className="global-nav">
+        <a className="global-nav-brand" onClick={() => navigateTo()}>
+          <img src="/logo-home1.png" alt="Logo" className="global-nav-logo" />
+          SYL.AILABS
+        </a>
+
+        <div className="global-nav-links">
+          <a
+            className={`global-nav-link ${currentSection === 'brandkit' ? 'active' : ''}`}
+            onClick={() => navigateTo('brandkit')}
+          >
+            Brand Kit Extractor
+          </a>
+          <a
+            className={`global-nav-link ${currentSection === 'chirp' ? 'active' : ''}`}
+            onClick={() => navigateTo('chirp')}
+          >
+            Chirp
+          </a>
+        </div>
+
+        <div className="global-nav-right">
+          {user ? (
+            <UserMenu user={user} onSignOut={handleSignOut} />
+          ) : (
+            <a className="global-nav-auth" onClick={() => navigateTo('login')}>
+              [ Sign In ]
+            </a>
+          )}
+        </div>
+      </nav>
+
+      <div className="app-body">
+        {renderContent()}
+      </div>
+    </div>
+  )
+}
+
+function Typewriter({ lines }) {
+  const fullText = useMemo(() => lines.join('\n'), [lines])
+  const [charIndex, setCharIndex] = useState(0)
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    if (charIndex < fullText.length) {
+      const char = fullText[charIndex]
+      const delay = char === '\n' ? 400 : char === '.' ? 200 : 50 + Math.random() * 40
+      const timer = setTimeout(() => setCharIndex(i => i + 1), delay)
+      return () => clearTimeout(timer)
+    } else {
+      setDone(true)
+    }
+  }, [charIndex, fullText])
+
+  const displayed = fullText.slice(0, charIndex)
+  const displayedLines = displayed.split('\n')
+
+  return (
+    <div className="typewriter-container">
+      {lines.map((line, i) => (
+        <p key={i} className="landing-line">
+          {displayedLines[i] || ''}
+          {i === displayedLines.length - 1 && !done && (
+            <span className="typewriter-cursor">|</span>
+          )}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function UserMenu({ user, onSignOut }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="global-user-menu" onClick={() => setOpen(!open)}>
+      <div className="global-user-dot"></div>
+      <span>{user.displayName || user.email.split('@')[0]}</span>
+      {open && (
+        <div className="global-dropdown">
+          {user.displayName && (
+            <div className="global-dropdown-info">
+              <span className="global-dropdown-name">{user.displayName}</span>
+            </div>
+          )}
+          <div className="global-dropdown-info">
+            <span className="global-dropdown-email">{user.email}</span>
+          </div>
+          <div className="global-dropdown-divider"></div>
+          <button className="global-dropdown-item" onClick={onSignOut}>
+            Sign Out
+          </button>
+        </div>
       )}
     </div>
   )
