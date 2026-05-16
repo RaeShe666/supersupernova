@@ -149,6 +149,7 @@ function ChirpPage() {
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionIndex, setMentionIndex] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsDraft, setSettingsDraft] = useState({ name: '恋爱观察室' })
   const [typingAgentId, setTypingAgentId] = useState(null)
   const [toast, setToast] = useState('')
   const timelineRef = useRef(null)
@@ -163,6 +164,7 @@ function ChirpPage() {
   }), [])
 
   const visibleMembers = [{ id: 'user', name: userProfile.nickname, color: '#F5C878', avatar: UserAvatar }, bird, ...agents]
+  const memberCount = visibleMembers.length
   const mentionItems = useMemo(() => [
     ...agents.map(agent => ({
       id: agent.id,
@@ -333,7 +335,6 @@ function ChirpPage() {
     }
 
     setAgents(prev => [...prev, candidate])
-    pushMessage({ type: 'system', text: `${candidate.name} joined ${planet.name}.` })
     showToast(`${candidate.name} joined the chat.`)
     return candidate
   }
@@ -404,7 +405,6 @@ function ChirpPage() {
       if (!removed) return
       setAgents(prev => prev.slice(0, -1))
       if (activeAgentId === removed.id) setActiveAgentId(null)
-      pushMessage({ type: 'system', text: `${removed.name} left ${planet.name}.` })
       await replyAsAgent(bird, `Done. I removed ${removed.name}.`)
       return
     }
@@ -446,7 +446,6 @@ function ChirpPage() {
         await replyAsAgent(agent, null, conversationWithUserMessage)
         await sleep(850)
       }
-      pushMessage({ type: 'system', text: '@all finished.' })
       return
     }
 
@@ -459,11 +458,6 @@ function ChirpPage() {
     const nextAgent = agents.find(agent => agent.id === mention) || agents.find(agent => agent.id === activeAgentId)
     if (!nextAgent) return
 
-    if (mention && activeAgentId && activeAgentId !== mention) {
-      const previous = agents.find(agent => agent.id === activeAgentId)
-      if (previous) pushMessage({ type: 'system', text: `${previous.name} is muted. ${nextAgent.name} is active.` })
-    }
-
     setActiveAgentId(nextAgent.id)
     await replyAsAgent(nextAgent, null, conversationWithUserMessage)
   }
@@ -475,18 +469,27 @@ function ChirpPage() {
     const next = [...agents]
     ;[next[index], next[target]] = [next[target], next[index]]
     setAgents(next)
-    pushMessage({ type: 'system', text: '@all order updated.' })
   }
 
   const removeAgent = (agentId) => {
     const removed = agents.find(agent => agent.id === agentId)
     setAgents(prev => prev.filter(agent => agent.id !== agentId))
     if (activeAgentId === agentId) setActiveAgentId(null)
-    if (removed) pushMessage({ type: 'system', text: `${removed.name} left ${planet.name}.` })
   }
 
-  const updatePlanetName = (value) => {
-    setPlanet(prev => ({ ...prev, name: value || 'Untitled Planet' }))
+  const openSettings = () => {
+    setSettingsDraft({ name: planet.name })
+    setSettingsOpen(true)
+  }
+
+  const closeSettings = () => {
+    setSettingsDraft({ name: planet.name })
+    setSettingsOpen(false)
+  }
+
+  const saveSettings = () => {
+    setPlanet(prev => ({ ...prev, name: settingsDraft.name.trim() || 'Untitled Planet' }))
+    setSettingsOpen(false)
   }
 
   return (
@@ -497,19 +500,11 @@ function ChirpPage() {
             <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
           </button>
 
-          <button className="chirp-group-title" onClick={() => setSettingsOpen(true)}>
-            <div className="chirp-member-stack">
-              {visibleMembers.slice(0, 5).map(member => (
-                <span className="chirp-mini-avatar" style={{ backgroundColor: member.color }} key={member.id}>
-                  <member.avatar />
-                </span>
-              ))}
-            </div>
-            <span>{planet.name}</span>
-            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+          <button className="chirp-group-title" onClick={openSettings}>
+            <span>{planet.name} ({memberCount})</span>
           </button>
 
-          <button className="chirp-more" onClick={() => setSettingsOpen(true)} aria-label="Group settings">
+          <button className="chirp-more" onClick={openSettings} aria-label="Group settings">
             <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
         </header>
@@ -611,11 +606,37 @@ function ChirpPage() {
             </footer>
           </section>
 
+          {settingsOpen && (
+            <button
+              className="chirp-settings-scrim"
+              type="button"
+              aria-label="Close settings"
+              onClick={closeSettings}
+            />
+          )}
+
           <aside className="chirp-settings">
             <div className="chirp-settings-head">
-              <strong>Chat Info</strong>
-              <button onClick={() => setSettingsOpen(false)} aria-label="Close settings">×</button>
+              <button onClick={closeSettings} aria-label="Close settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
             </div>
+
+            <section className="chirp-room-profile">
+              <div className="chirp-room-profile-inner">
+                <div className="chirp-room-avatar">
+                  <DeerAvatar />
+                </div>
+                <input
+                  className="chirp-room-name-input"
+                  value={settingsDraft.name}
+                  onChange={(event) => setSettingsDraft(prev => ({ ...prev, name: event.target.value }))}
+                  aria-label="Group name"
+                />
+              </div>
+            </section>
 
             <div className="chirp-settings-body">
               <section>
@@ -650,16 +671,6 @@ function ChirpPage() {
               </section>
 
               <section>
-                <h3>Planet Settings</h3>
-                <div className="chirp-settings-card">
-                  <label>
-                    <span>Planet Name</span>
-                    <input value={planet.name} onChange={(event) => updatePlanetName(event.target.value)} />
-                  </label>
-                </div>
-              </section>
-
-              <section>
                 <h3>@all Order</h3>
                 <div className="chirp-agent-list">
                   {agents.map((agent, index) => (
@@ -677,6 +688,10 @@ function ChirpPage() {
                   ))}
                 </div>
               </section>
+            </div>
+
+            <div className="chirp-settings-footer">
+              <button type="button" onClick={saveSettings}>Save</button>
             </div>
           </aside>
         </main>
