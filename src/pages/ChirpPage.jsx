@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import {
   BIRD,
   CHIRP_PLANETS,
@@ -9,8 +10,10 @@ import {
   formatMessageTime,
   getPersonasForPlanet,
   getPlanetRecent,
+  savePlanetMeta,
   writePlanetActivity
 } from './chirpShared'
+import { loadChirpMessages, loadCustomPersonas, loadPlanetMemberPersonas, saveChirpMessage, savePlanetMemberPersonas, updateChirpPlanet } from './chirpSupabase'
 import './ChirpPage.css'
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
@@ -27,12 +30,13 @@ const createInitialMessages = (planet) => {
 
   return [
     { id: 'm1', type: 'memo', text: '他今天只回了一个“嗯嗯”，我有点想装作没事，但其实一直在想。', createdAt: Date.now() - 1000 * 60 * 4 },
-    { id: 'm2', type: 'user', text: '@恋爱脑 这是不是有点冷了？', read: true, tapbacks: ['🙂'], createdAt: Date.now() - 1000 * 60 * 3 },
+    { id: 'm2', type: 'user', text: '@恋爱脑 这是不是有点冷了？', read: true, tapbacks: ['🙃'], createdAt: Date.now() - 1000 * 60 * 3 },
     { id: 'm3', type: 'agent', agentId: 'lovebrain', text: '先别急。我知道你现在脑子已经开始跑八百集了，但一个“嗯嗯”不能直接判案，你要看他接下来有没有补动作。', createdAt: Date.now() - 1000 * 60 * 2 }
   ]
 }
 
 function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
+  const { user, getAccessToken } = useAuth()
   const initialAgents = useMemo(() => getPersonasForPlanet(planetConfig), [planetConfig])
   const [planet, setPlanet] = useState({
     id: planetConfig.id,
@@ -55,16 +59,74 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   const [toast, setToast] = useState('')
   const timelineRef = useRef(null)
   const fileInputRef = useRef(null)
+  const previousPlanetIdRef = useRef(planetConfig.id)
 
   useEffect(() => {
-    const refreshAgents = () => setAgents(getPersonasForPlanet(planetConfig))
+    setPlanet(prev => ({
+      ...prev,
+      id: planetConfig.id,
+      name: planetConfig.roomName,
+      type: planetConfig.type,
+      tone: planetConfig.tone,
+      background: planetConfig.background,
+      dbId: planetConfig.dbId
+    }))
+    setSettingsDraft({ name: planetConfig.roomName })
+  }, [planetConfig.id, planetConfig.roomName, planetConfig.type, planetConfig.tone, planetConfig.background, planetConfig.dbId])
+
+  useEffect(() => {
+    if (previousPlanetIdRef.current === planetConfig.id) return
+    previousPlanetIdRef.current = planetConfig.id
+    setAgents(initialAgents)
+    setActiveAgentId(initialAgents[0]?.id || null)
+    setMessages(createInitialMessages(planetConfig))
+  }, [planetConfig.id, initialAgents, planetConfig])
+
+  useEffect(() => {
+    let cancelled = false
+    const loadRemoteMessages = async () => {
+      try {
+        const remoteMessages = await loadChirpMessages(planetConfig)
+        if (!cancelled && remoteMessages?.length) setMessages(remoteMessages)
+      } catch (error) {
+        console.warn('Failed to load Chirp messages:', error)
+      }
+    }
+    loadRemoteMessages()
+    return () => { cancelled = true }
+  }, [planetConfig.dbId])
+
+  useEffect(() => {
+    let cancelled = false
+    const loadRemoteMembers = async () => {
+      try {
+        const customPersonas = user ? await loadCustomPersonas(user) : []
+        const remoteAgents = await loadPlanetMemberPersonas(planetConfig, getPersonasForPlanet(planetConfig), customPersonas)
+        if (!cancelled) setAgents(remoteAgents)
+      } catch (error) {
+        console.warn('Failed to load Planet members:', error)
+      }
+    }
+    loadRemoteMembers()
+    return () => { cancelled = true }
+  }, [planetConfig.dbId, planetConfig, user])
+
+  useEffect(() => {
+    const refreshAgents = () => {
+      const fallbackAgents = getPersonasForPlanet(planetConfig)
+      loadCustomPersonas(user)
+        .catch(() => [])
+        .then(customPersonas => loadPlanetMemberPersonas(planetConfig, fallbackAgents, customPersonas))
+        .then(setAgents)
+        .catch(() => setAgents(fallbackAgents))
+    }
     window.addEventListener('chirp:planet-personas-updated', refreshAgents)
     window.addEventListener('chirp:personas-updated', refreshAgents)
     return () => {
       window.removeEventListener('chirp:planet-personas-updated', refreshAgents)
       window.removeEventListener('chirp:personas-updated', refreshAgents)
     }
-  }, [planetConfig])
+  }, [planetConfig, user])
 
   const bird = BIRD
   const visibleMembers = [{ id: 'user', name: userProfile.nickname, color: '#F5C878', avatar: UserAvatar }, bird, ...agents]
@@ -94,9 +156,17 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   }, [mentionItems, mentionQuery])
 
   const pushMessage = (message) => {
-    setMessages(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, createdAt: Date.now(), ...message }])
+    const nextMessage = { id: `${Date.now()}-${Math.random()}`, createdAt: Date.now(), ...message }
+    setMessages(prev => [...prev, nextMessage])
     requestAnimationFrame(() => {
       if (timelineRef.current) timelineRef.current.scrollTop = timelineRef.current.scrollHeight
+    })
+    return nextMessage
+  }
+
+  const persistMessage = (message) => {
+    saveChirpMessage(planetConfig, message).catch(error => {
+      console.warn('Failed to save Chirp message:', error)
     })
   }
 
@@ -176,9 +246,12 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       const apiBase = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8080' : '')
       const recent = getPlanetRecent(planet)
+      const token = await getAccessToken()
+      const headers = { 'Content-Type': 'application/json' }
+      if (token) headers.Authorization = `Bearer ${token}`
       const response = await fetch(`${apiBase}/api/chirp/reply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           planet: { ...planet, recentUserMessage: recent.rawText || recent.text, recentUserMessageAt: recent.timestamp },
           user: userProfile,
@@ -236,7 +309,8 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
     if (typingVisible) await sleep(380)
     setTypingAgentId(null)
     addTapbackToLastUserMessage(tapback)
-    pushMessage({ type: 'agent', agentId: agent.id, text: replyText })
+    const savedAgentMessage = pushMessage({ type: 'agent', agentId: agent.id, text: replyText })
+    persistMessage(savedAgentMessage)
   }
 
   const addPersonaFromCommunity = () => {
@@ -245,7 +319,9 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
       showToast('No more mock personas available.')
       return null
     }
-    setAgents(prev => [...prev, candidate])
+    const nextAgents = [...agents, candidate]
+    setAgents(nextAgents)
+    savePlanetMemberPersonas(planetConfig, nextAgents).catch(error => console.warn('Failed to save Planet members:', error))
     showToast(`${candidate.name} joined the chat.`)
     return candidate
   }
@@ -298,12 +374,14 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
     rememberUserMessage(text, timestamp)
 
     if (!mention && !activeAgentId) {
-      pushMessage({ type: 'memo', text, createdAt: timestamp })
+      const memoMessage = pushMessage({ type: 'memo', text, createdAt: timestamp })
+      persistMessage(memoMessage)
       return
     }
 
     const userMessage = { type: 'user', text, read: true, createdAt: timestamp }
-    pushMessage(userMessage)
+    const savedUserMessage = pushMessage(userMessage)
+    persistMessage(savedUserMessage)
     const conversationWithUserMessage = [...messages, userMessage]
 
     if (mention === 'all') {
@@ -334,11 +412,14 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
     const next = [...agents]
     ;[next[index], next[target]] = [next[target], next[index]]
     setAgents(next)
+    savePlanetMemberPersonas(planetConfig, next).catch(error => console.warn('Failed to save Planet member order:', error))
   }
 
   const removeAgent = (agentId) => {
     const removed = agents.find(agent => agent.id === agentId)
-    setAgents(prev => prev.filter(agent => agent.id !== agentId))
+    const nextAgents = agents.filter(agent => agent.id !== agentId)
+    setAgents(nextAgents)
+    savePlanetMemberPersonas(planetConfig, nextAgents).catch(error => console.warn('Failed to save Planet members:', error))
     if (activeAgentId === removed?.id) setActiveAgentId(null)
   }
 
@@ -353,7 +434,12 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   }
 
   const saveSettings = () => {
-    setPlanet(prev => ({ ...prev, name: settingsDraft.name.trim() || 'Untitled Planet' }))
+    const nextName = settingsDraft.name.trim() || 'Untitled Planet'
+    savePlanetMeta(planet.id, { roomName: nextName, cardTitle: nextName })
+    updateChirpPlanet(planet, { roomName: nextName }).catch(error => {
+      console.warn('Failed to save Planet to Supabase:', error)
+    })
+    setPlanet(prev => ({ ...prev, name: nextName }))
     setSettingsOpen(false)
   }
 

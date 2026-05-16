@@ -64,6 +64,38 @@
     color: #2E5C46;
 }
 
+.global-nav-home-link {
+    border: 0;
+    background: transparent;
+    color: #2E5C46;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    padding: 0;
+    text-transform: lowercase;
+    transition: opacity 0.2s;
+}
+
+.global-nav-home-link:hover {
+    opacity: 0.7;
+}
+
+.global-nav-home-link.active {
+    opacity: 1;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.global-nav-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
 .global-nav-logo {
     height: 32px;
     width: auto;
@@ -105,8 +137,32 @@
     align-items: center;
 }
 
+.global-nav-animal-button {
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(46, 92, 70, 0.16);
+    border-radius: 999px;
+    background: #F4F1EB;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    overflow: hidden;
+    transition: opacity 0.2s;
+}
+
+.global-nav-animal-button:hover {
+    opacity: 0.78;
+}
+
+.global-nav-animal-button svg {
+    width: 34px;
+    height: 34px;
+    display: block;
+}
+
 .global-nav-auth {
-    font-size: 12px;
+    font-size: 16px;
     letter-spacing: 0.05em;
     color: #2E5C46;
     cursor: pointer;

@@ -1,6 +1,7 @@
 const ACTIVITY_KEY = 'chirpPlanetActivity'
 const CUSTOM_PERSONAS_KEY = 'chirpCustomPersonas'
 const PLANET_PERSONAS_KEY = 'chirpPlanetPersonas'
+const PLANET_META_KEY = 'chirpPlanetMeta'
 
 export const formatMessageTime = (date = new Date()) => (
   new Intl.DateTimeFormat('zh-CN', {
@@ -244,7 +245,7 @@ export const PERSONA_POOL = [
     role: '情绪雷达',
     color: '#EBA7B5',
     avatar: CatAvatar,
-    emoji: '🙂',
+    emoji: '🙃',
     pricing: 'free',
     usageCount: 449,
     description: 'A warm but sharp emotional radar for reading romantic uncertainty without turning every small reply into a final verdict.',
@@ -256,7 +257,7 @@ export const PERSONA_POOL = [
     role: '关系拆解',
     color: '#A9C9DF',
     avatar: FoxAvatar,
-    emoji: '🤔',
+    emoji: '🫡',
     pricing: 'free',
     usageCount: 389,
     description: 'Separates facts, assumptions, evidence, and next moves. Useful when a relationship or work situation needs structure.',
@@ -280,7 +281,7 @@ export const PERSONA_POOL = [
     role: '温柔承接',
     color: '#A9CDA0',
     avatar: RabbitAvatar,
-    emoji: '🫶',
+    emoji: '🐰',
     pricing: 'free',
     usageCount: 217,
     description: 'A gentle landing voice for moments when the user needs to settle emotionally before analyzing what happened.',
@@ -292,7 +293,7 @@ export const BIRD = {
   id: 'bird',
   name: 'Bird',
   role: 'Admin',
-  color: '#F5C878',
+  color: '#DCC4EA',
   avatar: BirdAvatar
 }
 
@@ -326,6 +327,34 @@ export const CHIRP_PLANETS = [
     time: '09:18'
   }
 ]
+
+export const readPlanetMeta = () => readJson(PLANET_META_KEY, {})
+
+export const savePlanetMeta = (planetId, patch) => {
+  if (!planetId) return null
+  const current = readPlanetMeta()
+  const nextPlanet = {
+    ...(current[planetId] || {}),
+    ...patch,
+    updatedAt: Date.now()
+  }
+  const next = { ...current, [planetId]: nextPlanet }
+  writeJson(PLANET_META_KEY, next)
+  window.dispatchEvent(new CustomEvent('chirp:planet-meta-updated', { detail: { planetId, meta: nextPlanet } }))
+  return nextPlanet
+}
+
+export const hydratePlanet = (planet) => {
+  const meta = readPlanetMeta()[planet.id] || {}
+  return {
+    ...planet,
+    ...meta,
+    roomName: meta.roomName || planet.roomName,
+    cardTitle: meta.cardTitle || meta.roomName || planet.cardTitle
+  }
+}
+
+export const getAllPlanets = () => CHIRP_PLANETS.map(hydratePlanet)
 
 export const readCustomPersonas = () => readJson(CUSTOM_PERSONAS_KEY, [])
 
@@ -371,7 +400,7 @@ export const removePersonaFromPlanet = (planetId, personaId) => {
   window.dispatchEvent(new CustomEvent('chirp:planet-personas-updated', { detail: { planetId, personaId } }))
 }
 
-export const getPlanetById = (planetId) => (
+export const getPlanetById = (planetId) => hydratePlanet(
   CHIRP_PLANETS.find(planet => planet.id === planetId) || CHIRP_PLANETS[0]
 )
 

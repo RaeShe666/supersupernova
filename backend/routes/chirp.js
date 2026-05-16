@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { authenticateUser } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -36,7 +37,7 @@ function parseJsonReply(content) {
     }
 }
 
-router.post('/chirp/reply', async (req, res) => {
+router.post('/chirp/reply', authenticateUser, async (req, res) => {
     const apiKey = process.env.DEEPSEEK_API_KEY
 
     if (!apiKey) {
