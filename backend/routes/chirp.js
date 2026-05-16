@@ -57,7 +57,9 @@ router.post('/chirp/reply', async (req, res) => {
 
     const latestUserMessage = [...(messages || [])].reverse().find(message => message.type === 'user')?.text || ''
     const recentUserMessage = planet?.recentUserMessage || latestUserMessage
-    const systemPrompt = `${PERSONA_SYSTEM[agent.id] || PERSONA_SYSTEM.strategist}
+    const personaInstruction = agent.systemPrompt || PERSONA_SYSTEM[agent.id] || PERSONA_SYSTEM.strategist
+    const personaSkills = agent.skills ? `\nPersona skills: ${agent.skills}` : ''
+    const systemPrompt = `${personaInstruction}${personaSkills}
 
 Chirp product rules:
 - The current Planet is "${planet?.name || 'Untitled Planet'}".

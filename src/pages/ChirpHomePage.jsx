@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import ChirpPage from './ChirpPage'
 import {
+  addPersonaToPlanet,
   BIRD,
+  buildPersonaTheme,
   CHIRP_PLANETS,
+  getAllPersonas,
   getPlanetById,
   getPlanetRecent,
+  getPersonaTheme,
+  PersonaAvatar,
   readPlanetActivity,
+  saveCustomPersona,
   truncateTitle
 } from './chirpShared'
 import './ChirpHomePage.css'
@@ -86,11 +92,66 @@ const DRAWER_MIN_WIDTH = 260
 const DRAWER_DEFAULT_WIDTH = 300
 const DRAWER_MAX_WIDTH = 340
 
+const rgbToHex = (r, g, b) => (
+  `#${[r, g, b].map(value => Math.round(value).toString(16).padStart(2, '0')).join('')}`
+)
+
+const extractDominantColor = (src) => new Promise((resolve) => {
+  const image = new Image()
+  image.onload = () => {
+    const canvas = document.createElement('canvas')
+    const size = 32
+    canvas.width = size
+    canvas.height = size
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (!context) {
+      resolve('#F5C878')
+      return
+    }
+
+    context.drawImage(image, 0, 0, size, size)
+    const { data } = context.getImageData(0, 0, size, size)
+    let r = 0
+    let g = 0
+    let b = 0
+    let total = 0
+
+    for (let index = 0; index < data.length; index += 16) {
+      const alpha = data[index + 3]
+      if (alpha < 80) continue
+      const red = data[index]
+      const green = data[index + 1]
+      const blue = data[index + 2]
+      const brightness = (red + green + blue) / 3
+      if (brightness > 238 || brightness < 18) continue
+      r += red
+      g += green
+      b += blue
+      total += 1
+    }
+
+    resolve(total ? rgbToHex(r / total, g / total, b / total) : '#F5C878')
+  }
+  image.onerror = () => resolve('#F5C878')
+  image.src = src
+})
+
+const getPersonaThemeStyle = (persona) => {
+  const theme = getPersonaTheme(persona)
+  return {
+    '--persona-card-a': theme.card[0],
+    '--persona-card-b': theme.card[1],
+    '--persona-card-c': theme.card[2],
+    '--persona-avatar-bg': theme.avatar
+  }
+}
+
 function ChirpHomePage({ page, id }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerMode, setDrawerMode] = useState('menu')
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT_WIDTH)
   const [planetActivity, setPlanetActivity] = useState(() => readPlanetActivity())
+  const [personas, setPersonas] = useState(() => getAllPersonas())
   const selectedPlanet = useMemo(() => (
     page === 'planet' ? getPlanetById(id) : null
   ), [page, id])
@@ -123,13 +184,16 @@ function ChirpHomePage({ page, id }) {
       setDrawerOpen(true)
     }
     const refreshActivity = () => setPlanetActivity(readPlanetActivity())
+    const refreshPersonas = () => setPersonas(getAllPersonas())
 
     window.addEventListener('chirp:open-menu', openMenu)
     window.addEventListener('chirp:planet-activity', refreshActivity)
+    window.addEventListener('chirp:personas-updated', refreshPersonas)
     window.addEventListener('storage', refreshActivity)
     return () => {
       window.removeEventListener('chirp:open-menu', openMenu)
       window.removeEventListener('chirp:planet-activity', refreshActivity)
+      window.removeEventListener('chirp:personas-updated', refreshPersonas)
       window.removeEventListener('storage', refreshActivity)
     }
   }, [])
@@ -138,6 +202,15 @@ function ChirpHomePage({ page, id }) {
     return (
       <div className="chirp-home-detail">
         <ChirpPage planetConfig={selectedPlanet} onBack={openPlanetDrawer} />
+        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
+      </div>
+    )
+  }
+
+  if (page === 'persona') {
+    return (
+      <div className="chirp-home-page">
+        <PersonaPage personas={personas} onPersonasChange={() => setPersonas(getAllPersonas())} />
         <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
       </div>
     )
@@ -217,6 +290,165 @@ function PlanetCard({ planet, recent }) {
   )
 }
 
+function PersonaPage({ personas, onPersonasChange }) {
+  const [creatorOpen, setCreatorOpen] = useState(false)
+  const [usePersona, setUsePersona] = useState(null)
+  const [toast, setToast] = useState('')
+  const [draft, setDraft] = useState({
+    name: '',
+    role: '',
+    description: '',
+    systemPrompt: '',
+    skills: '',
+    avatarUrl: '',
+    color: '#F5C878'
+  })
+
+  const showToast = (message) => {
+    setToast(message)
+    window.setTimeout(() => setToast(''), 1800)
+  }
+
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (file.size > 1024 * 1024) {
+      showToast('Avatar must be under 1MB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const avatarUrl = reader.result
+      const color = await extractDominantColor(avatarUrl)
+      setDraft(prev => ({ ...prev, avatarUrl, color }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const createPersona = () => {
+    const name = draft.name.trim()
+    const systemPrompt = draft.systemPrompt.trim()
+    if (!name || !systemPrompt) {
+      showToast('Name and system prompt are required.')
+      return
+    }
+
+    saveCustomPersona({
+      id: `custom-${Date.now()}`,
+      name,
+      role: draft.role.trim() || 'custom persona',
+      description: draft.description.trim() || 'A custom persona created by you for private Planet conversations.',
+      systemPrompt,
+      skills: draft.skills.trim(),
+      avatarUrl: draft.avatarUrl,
+      color: draft.color || '#F5C878',
+      theme: buildPersonaTheme(draft.color || '#F5C878'),
+      pricing: 'free',
+      usageCount: 0,
+      createdAt: Date.now()
+    })
+    setDraft({ name: '', role: '', description: '', systemPrompt: '', skills: '', avatarUrl: '', color: '#F5C878' })
+    setCreatorOpen(false)
+    onPersonasChange()
+    showToast('Persona created.')
+  }
+
+  const attachPersona = (planet, persona) => {
+    addPersonaToPlanet(planet.id, persona.id)
+    setUsePersona(null)
+    showToast(`${persona.name} added to ${planet.roomName}.`)
+  }
+
+  return (
+    <main className="chirp-persona-page">
+      <div className="chirp-persona-head">
+        <p>Persona</p>
+        <h1>Find a persona for the planet.</h1>
+      </div>
+
+      <div className="chirp-persona-grid">
+        <button className="chirp-persona-card chirp-persona-create" type="button" onClick={() => setCreatorOpen(true)}>
+          <div className="persona-title-row persona-create-title-row">
+            <span className="persona-avatar persona-create-avatar">+</span>
+            <strong>Create Persona</strong>
+          </div>
+          <p>Write a system prompt, define skills, and upload an avatar.</p>
+          <div className="persona-card-foot">
+            <span className="persona-create-button">Create</span>
+          </div>
+        </button>
+
+        {personas.map(persona => (
+          <article className={`chirp-persona-card persona-${persona.pricing}`} key={persona.id} style={getPersonaThemeStyle(persona)}>
+            <div className="persona-price">{persona.pricing === 'paid' ? 'Paid' : 'Free'}</div>
+            <div className="persona-title-row">
+              <div className="persona-avatar"><PersonaAvatar persona={persona} /></div>
+              <h2>{persona.name}</h2>
+            </div>
+            <p>{persona.description}</p>
+            <div className="persona-card-foot">
+              <span>{persona.usageCount || 0} in use</span>
+              <button type="button" onClick={() => setUsePersona(persona)}>Use</button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {creatorOpen && (
+        <div className="persona-modal-layer">
+          <section className="persona-modal">
+            <button className="persona-modal-close" type="button" onClick={() => setCreatorOpen(false)}>×</button>
+            <h2>Create Persona</h2>
+            <label>
+              <span>Name</span>
+              <input value={draft.name} onChange={(event) => setDraft(prev => ({ ...prev, name: event.target.value }))} />
+            </label>
+            <label>
+              <span>Skill</span>
+              <input value={draft.skills} onChange={(event) => setDraft(prev => ({ ...prev, skills: event.target.value }))} />
+            </label>
+            <label>
+              <span>Short intro</span>
+              <textarea value={draft.description} onChange={(event) => setDraft(prev => ({ ...prev, description: event.target.value }))} rows="3" />
+            </label>
+            <label>
+              <span>System prompt</span>
+              <textarea value={draft.systemPrompt} onChange={(event) => setDraft(prev => ({ ...prev, systemPrompt: event.target.value }))} rows="5" />
+            </label>
+            <label className="persona-avatar-upload">
+              <span>Avatar</span>
+              <input type="file" accept="image/*" onChange={handleAvatarUpload} />
+            </label>
+            <button className="persona-primary" type="button" onClick={createPersona}>Create</button>
+          </section>
+        </div>
+      )}
+
+      {usePersona && (
+        <div className="persona-modal-layer">
+          <section className="persona-use-panel">
+            <button className="persona-modal-close" type="button" onClick={() => setUsePersona(null)}>×</button>
+            <h2>Add to Planet</h2>
+            {CHIRP_PLANETS.map(planet => {
+              const Avatar = planet.avatar
+              return (
+                <div className="persona-planet-row" key={planet.id}>
+                  <span style={{ backgroundColor: planet.color }}><Avatar /></span>
+                  <strong>{planet.roomName}</strong>
+                  <button type="button" onClick={() => attachPersona(planet, usePersona)}>+</button>
+                </div>
+              )
+            })}
+          </section>
+        </div>
+      )}
+
+      {toast && <div className="chirp-toast persona-toast">{toast}</div>}
+    </main>
+  )
+}
+
 function DrawerPlanetCard({ planet, onClick, recent }) {
   const Art = planetArt[planet.id] || LoveCat
   const className = planet.id === 'work' ? 'pc-work' : 'pc-love'
@@ -243,16 +475,46 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, drawerWidth, onRe
       {open && <button className="chirp-home-drawer-scrim" type="button" aria-label="Close menu" onClick={onClose} />}
       <aside className={`chirp-home-drawer ${open ? 'open' : ''}`} style={{ '--drawer-width': `${drawerWidth}px` }}>
         <div className="chirp-home-drawer-head">
-          <strong>{mode === 'planets' ? 'My Planet' : 'chirp'}</strong>
+          {mode === 'planets' ? (
+            <strong>My Planet</strong>
+          ) : (
+            <button
+              className="chirp-home-drawer-home"
+              type="button"
+              onClick={() => {
+                onClose()
+                navigateTo('chirp')
+              }}
+            >
+              home
+            </button>
+          )}
           <button type="button" aria-label="Close menu" onClick={onClose}>×</button>
         </div>
 
         {mode === 'menu' ? (
           <div className="chirp-home-menu-list">
-            <button type="button" onClick={() => setMode('planets')}><span>◐</span><strong>Planet</strong></button>
-            <button type="button"><span>◎</span><strong>Persona</strong><small>Coming soon</small></button>
-            <button type="button"><span>✎</span><strong>Moments</strong><small>Coming soon</small></button>
-            <button type="button"><span>✦</span><strong>About Me</strong><small>Coming soon</small></button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                setMode('planets')
+                navigateTo('chirp', 'planet', CHIRP_PLANETS[0].id)
+              }}
+            >
+              <span>◐</span><strong>Planet</strong>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                navigateTo('chirp', 'persona')
+              }}
+            >
+              <span>◎</span><strong>Persona</strong>
+            </button>
+            <button type="button"><span>✎</span><strong>Moments</strong></button>
+            <button type="button"><span>✦</span><strong>About Me</strong></button>
           </div>
         ) : (
           <div className="chirp-home-drawer-planets">

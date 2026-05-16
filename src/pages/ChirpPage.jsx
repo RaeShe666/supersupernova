@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   BIRD,
   CHIRP_PLANETS,
   DeerAvatar,
   PERSONA_POOL,
+  PersonaAvatar,
   UserAvatar,
   formatMessageTime,
   getPersonasForPlanet,
@@ -54,6 +55,16 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   const [toast, setToast] = useState('')
   const timelineRef = useRef(null)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    const refreshAgents = () => setAgents(getPersonasForPlanet(planetConfig))
+    window.addEventListener('chirp:planet-personas-updated', refreshAgents)
+    window.addEventListener('chirp:personas-updated', refreshAgents)
+    return () => {
+      window.removeEventListener('chirp:planet-personas-updated', refreshAgents)
+      window.removeEventListener('chirp:personas-updated', refreshAgents)
+    }
+  }, [planetConfig])
 
   const bird = BIRD
   const visibleMembers = [{ id: 'user', name: userProfile.nickname, color: '#F5C878', avatar: UserAvatar }, bird, ...agents]
@@ -171,7 +182,13 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
         body: JSON.stringify({
           planet: { ...planet, recentUserMessage: recent.rawText || recent.text, recentUserMessageAt: recent.timestamp },
           user: userProfile,
-          agent: { id: agent.id, name: agent.name, role: agent.role },
+          agent: {
+            id: agent.id,
+            name: agent.name,
+            role: agent.role,
+            systemPrompt: agent.systemPrompt,
+            skills: agent.skills
+          },
           members: agents.map(({ id, name, role }) => ({ id, name, role })),
           messages: currentMessages.slice(-12).map(message => ({
             type: message.type,
@@ -412,7 +429,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
                         }}
                       >
                         <span className="chirp-mention-avatar" style={{ backgroundColor: item.color }}>
-                          {item.avatar ? <item.avatar /> : 'all'}
+                          {item.avatar ? <PersonaAvatar persona={item} /> : 'all'}
                         </span>
                         <span><strong>{item.label}</strong><small>{item.role}</small></span>
                       </button>
@@ -445,7 +462,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
                 <div className="chirp-members-grid">
                   {visibleMembers.map(member => (
                     <div className="chirp-member" key={member.id}>
-                      <div className="chirp-member-avatar" style={{ backgroundColor: member.color }}><member.avatar /></div>
+                      <div className="chirp-member-avatar" style={{ backgroundColor: member.color }}><PersonaAvatar persona={member} /></div>
                       <span>{member.name}</span>
                     </div>
                   ))}
@@ -467,7 +484,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
                 <div className="chirp-agent-list">
                   {agents.map((agent, index) => (
                     <div className="chirp-agent-row" key={agent.id}>
-                      <div className="chirp-agent-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
+                      <div className="chirp-agent-avatar" style={{ backgroundColor: agent.color }}><PersonaAvatar persona={agent} /></div>
                       <div><strong>{index + 1}. {agent.name}</strong><span>{agent.role}</span></div>
                       <div className="chirp-agent-actions">
                         <button onClick={() => moveAgent(agent.id, -1)}>↑</button>
@@ -508,7 +525,7 @@ function MessageBubble({ message, agents, bird }) {
   if (!agent) return null
   return (
     <div className="chirp-message agent">
-      <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
+      <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><PersonaAvatar persona={agent} /></div>
       <div className="chirp-agent-message-body"><span className="chirp-agent-name">{agent.name}</span><div className="chirp-bubble">{message.text}</div></div>
     </div>
   )
@@ -518,7 +535,7 @@ function TypingBubble({ agent }) {
   if (!agent) return null
   return (
     <div className="chirp-message agent">
-      <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
+      <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><PersonaAvatar persona={agent} /></div>
       <div className="chirp-agent-message-body"><div className="chirp-bubble typing"><i></i><i></i><i></i></div></div>
     </div>
   )

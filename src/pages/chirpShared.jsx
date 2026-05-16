@@ -1,4 +1,6 @@
 const ACTIVITY_KEY = 'chirpPlanetActivity'
+const CUSTOM_PERSONAS_KEY = 'chirpCustomPersonas'
+const PLANET_PERSONAS_KEY = 'chirpPlanetPersonas'
 
 export const formatMessageTime = (date = new Date()) => (
   new Intl.DateTimeFormat('zh-CN', {
@@ -31,9 +33,7 @@ export const truncateRecentMessage = (text = '', limit = 25) => {
   if (!clean) return ''
 
   const hasCjk = /[\u3400-\u9FFF]/.test(clean)
-  if (hasCjk) {
-    return clean.length > limit ? `${clean.slice(0, limit)}...` : clean
-  }
+  if (hasCjk) return clean.length > limit ? `${clean.slice(0, limit)}...` : clean
 
   const words = clean.split(' ')
   return words.length > limit ? `${words.slice(0, limit).join(' ')}...` : clean
@@ -52,14 +52,78 @@ export const truncateWords = (text = '', limit = 6) => {
 
 export const truncateTitle = (text = '', limit = 4) => truncateWords(text, limit)
 
-export const readPlanetActivity = () => {
-  if (typeof window === 'undefined') return {}
+const readJson = (key, fallback) => {
+  if (typeof window === 'undefined') return fallback
   try {
-    return JSON.parse(window.localStorage.getItem(ACTIVITY_KEY) || '{}')
+    return JSON.parse(window.localStorage.getItem(key) || JSON.stringify(fallback))
   } catch {
-    return {}
+    return fallback
   }
 }
+
+const writeJson = (key, value) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(key, JSON.stringify(value))
+}
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
+const hexToRgb = (hex = '#F5C878') => {
+  const clean = String(hex).replace('#', '').trim()
+  const value = clean.length === 3
+    ? clean.split('').map(char => char + char).join('')
+    : clean.padEnd(6, '0').slice(0, 6)
+  const int = Number.parseInt(value, 16)
+  if (Number.isNaN(int)) return { r: 245, g: 200, b: 120 }
+  return {
+    r: (int >> 16) & 255,
+    g: (int >> 8) & 255,
+    b: int & 255
+  }
+}
+
+const rgbToHsl = ({ r, g, b }) => {
+  const r1 = r / 255
+  const g1 = g / 255
+  const b1 = b / 255
+  const max = Math.max(r1, g1, b1)
+  const min = Math.min(r1, g1, b1)
+  let h = 0
+  let s = 0
+  const l = (max + min) / 2
+
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    if (max === r1) h = (g1 - b1) / d + (g1 < b1 ? 6 : 0)
+    if (max === g1) h = (b1 - r1) / d + 2
+    if (max === b1) h = (r1 - g1) / d + 4
+    h *= 60
+  }
+
+  return { h, s: s * 100, l: l * 100 }
+}
+
+const hsl = (h, s, l) => `hsl(${Math.round((h + 360) % 360)} ${Math.round(s)}% ${Math.round(l)}%)`
+
+export const buildPersonaTheme = (baseColor = '#F5C878') => {
+  const { h, s, l } = rgbToHsl(hexToRgb(baseColor))
+  const saturation = clamp(s * 0.48, 20, 38)
+  const warmShift = l < 42 ? 8 : -6
+
+  return {
+    avatar: hsl(h, clamp(s * 0.62, 28, 54), clamp(l + 18, 68, 84)),
+    card: [
+      hsl(h + warmShift, saturation, 88),
+      hsl(h + 14, clamp(saturation + 3, 22, 42), 82),
+      hsl(h + 32, clamp(saturation - 2, 18, 36), 86)
+    ]
+  }
+}
+
+export const getPersonaTheme = (persona) => persona?.theme || buildPersonaTheme(persona?.color)
+
+export const readPlanetActivity = () => readJson(ACTIVITY_KEY, {})
 
 export const writePlanetActivity = (planetId, message, timestamp = Date.now()) => {
   if (typeof window === 'undefined' || !planetId || !message) return
@@ -74,7 +138,7 @@ export const writePlanetActivity = (planetId, message, timestamp = Date.now()) =
     }
   }
 
-  window.localStorage.setItem(ACTIVITY_KEY, JSON.stringify(next))
+  writeJson(ACTIVITY_KEY, next)
   window.dispatchEvent(new CustomEvent('chirp:planet-activity', { detail: { planetId, activity: next[planetId] } }))
 }
 
@@ -164,18 +228,64 @@ export const RabbitAvatar = () => (
 )
 
 export function UserAvatar() {
-  return (
-    <span className="chirp-user-photo" aria-label="User avatar">
-      S
-    </span>
-  )
+  return <span className="chirp-user-photo" aria-label="User avatar">S</span>
+}
+
+export const PersonaAvatar = ({ persona }) => {
+  if (persona?.avatarUrl) return <img className="chirp-persona-img" src={persona.avatarUrl} alt="" />
+  const Avatar = persona?.avatar || CatAvatar
+  return <Avatar />
 }
 
 export const PERSONA_POOL = [
-  { id: 'lovebrain', name: '恋爱脑', role: '情绪雷达', color: '#E8A29C', avatar: CatAvatar, emoji: '🙂' },
-  { id: 'strategist', name: '军师', role: '关系拆解', color: '#A8C5DA', avatar: FoxAvatar, emoji: '🤔' },
-  { id: 'owl', name: '夜航猫头鹰', role: '边界观察', color: '#C4B0D9', avatar: OwlAvatar, emoji: '🌙' },
-  { id: 'rabbit', name: '软着陆', role: '温柔承接', color: '#A8C5A0', avatar: RabbitAvatar, emoji: '🫶' }
+  {
+    id: 'lovebrain',
+    name: '恋爱脑',
+    role: '情绪雷达',
+    color: '#EBA7B5',
+    avatar: CatAvatar,
+    emoji: '🙂',
+    pricing: 'free',
+    usageCount: 449,
+    description: 'A warm but sharp emotional radar for reading romantic uncertainty without turning every small reply into a final verdict.',
+    systemPrompt: 'You are 恋爱脑. Read emotional temperature quickly, but do not invent facts. Reply like a sharp friend in a group chat.'
+  },
+  {
+    id: 'strategist',
+    name: '军师',
+    role: '关系拆解',
+    color: '#A9C9DF',
+    avatar: FoxAvatar,
+    emoji: '🤔',
+    pricing: 'free',
+    usageCount: 389,
+    description: 'Separates facts, assumptions, evidence, and next moves. Useful when a relationship or work situation needs structure.',
+    systemPrompt: 'You are 军师. Separate facts, evidence, assumptions, and next moves. Reply calmly and directly.'
+  },
+  {
+    id: 'owl',
+    name: '夜航猫头鹰',
+    role: '边界观察',
+    color: '#B9A6D8',
+    avatar: OwlAvatar,
+    emoji: '🌙',
+    pricing: 'paid',
+    usageCount: 128,
+    description: 'A slower voice that watches boundaries, pacing, and the part of the user that needs a question before advice.',
+    systemPrompt: 'You are 夜航猫头鹰. Be slow, deep, and boundary-aware. Offer one grounded observation or one useful question.'
+  },
+  {
+    id: 'rabbit',
+    name: '软着陆',
+    role: '温柔承接',
+    color: '#A9CDA0',
+    avatar: RabbitAvatar,
+    emoji: '🫶',
+    pricing: 'free',
+    usageCount: 217,
+    description: 'A gentle landing voice for moments when the user needs to settle emotionally before analyzing what happened.',
+    systemPrompt: 'You are 软着陆. Help the user land emotionally before analysis. Gentle, not sugary.'
+  }
 ]
 
 export const BIRD = {
@@ -217,12 +327,60 @@ export const CHIRP_PLANETS = [
   }
 ]
 
+export const readCustomPersonas = () => readJson(CUSTOM_PERSONAS_KEY, [])
+
+export const saveCustomPersona = (persona) => {
+  const next = [persona, ...readCustomPersonas()]
+  writeJson(CUSTOM_PERSONAS_KEY, next)
+  window.dispatchEvent(new CustomEvent('chirp:personas-updated'))
+  return persona
+}
+
+const hydratePersona = (persona) => ({
+  ...persona,
+  avatar: persona.avatar || CatAvatar,
+  color: persona.color || '#F5C878',
+  theme: buildPersonaTheme(persona.color || '#F5C878'),
+  role: persona.role || 'custom persona',
+  pricing: persona.pricing || 'free',
+  usageCount: persona.usageCount || 0
+})
+
+export const getAllPersonas = () => [
+  ...PERSONA_POOL.map(hydratePersona),
+  ...readCustomPersonas().map(hydratePersona)
+]
+
+export const readPlanetPersonaIds = () => readJson(PLANET_PERSONAS_KEY, {})
+
+export const addPersonaToPlanet = (planetId, personaId) => {
+  const current = readPlanetPersonaIds()
+  const nextIds = Array.from(new Set([...(current[planetId] || []), personaId]))
+  const next = { ...current, [planetId]: nextIds }
+  writeJson(PLANET_PERSONAS_KEY, next)
+  window.dispatchEvent(new CustomEvent('chirp:planet-personas-updated', { detail: { planetId, personaId } }))
+}
+
+export const removePersonaFromPlanet = (planetId, personaId) => {
+  const current = readPlanetPersonaIds()
+  const next = {
+    ...current,
+    [planetId]: (current[planetId] || []).filter(id => id !== personaId)
+  }
+  writeJson(PLANET_PERSONAS_KEY, next)
+  window.dispatchEvent(new CustomEvent('chirp:planet-personas-updated', { detail: { planetId, personaId } }))
+}
+
 export const getPlanetById = (planetId) => (
   CHIRP_PLANETS.find(planet => planet.id === planetId) || CHIRP_PLANETS[0]
 )
 
-export const getPersonasForPlanet = (planet) => (
-  (planet?.agents || CHIRP_PLANETS[0].agents)
-    .map(id => PERSONA_POOL.find(persona => persona.id === id))
+export const getPersonasForPlanet = (planet) => {
+  const defaultIds = planet?.agents || CHIRP_PLANETS[0].agents
+  const addedIds = readPlanetPersonaIds()[planet?.id] || []
+  const allPersonas = getAllPersonas()
+
+  return Array.from(new Set([...defaultIds, ...addedIds]))
+    .map(id => allPersonas.find(persona => persona.id === id))
     .filter(Boolean)
-)
+}
