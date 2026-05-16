@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient'
 import HomePage from './pages/HomePage'
 import EditorPage from './pages/EditorPage'
 import LoginPage from './pages/LoginPage'
+import ChirpPage from './pages/ChirpPage'
 import { extractBrandKit } from './services/aiService'
 import './App.css'
 
@@ -336,14 +337,7 @@ function AppContent() {
     }
 
     if (currentSection === 'chirp') {
-      return (
-        <div className="placeholder-page">
-          <div className="placeholder-content">
-            <h2>Chirp</h2>
-            <p>Coming soon</p>
-          </div>
-        </div>
-      )
+      return <ChirpPage />
     }
 
     // Landing page
