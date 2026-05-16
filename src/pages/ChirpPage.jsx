@@ -2,6 +2,15 @@ import { useMemo, useRef, useState } from 'react'
 import './ChirpPage.css'
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+const formatMessageTime = (date = new Date()) => (
+  new Intl.DateTimeFormat('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(date)
+)
 
 const DeerAvatar = () => (
   <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
@@ -108,26 +117,24 @@ const PERSONA_POOL = [
 const INITIAL_MESSAGES = [
   {
     id: 'm1',
-    type: 'system',
-    text: '默认发送会作为 Planet 记录保存。Bird 在这里是管理员，不主动发言。'
+    type: 'memo',
+    text: '他今天只回了一个「嗯嗯」，我有点想装作没事，但其实一直在想。',
+    createdAt: Date.now() - 1000 * 60 * 4
   },
   {
     id: 'm2',
-    type: 'memo',
-    text: '他今天只回了一个「嗯嗯」，我有点想装作没事，但其实一直在想。'
-  },
-  {
-    id: 'm3',
     type: 'user',
     text: '@恋爱脑 这是不是有点冷掉了？',
     read: true,
-    tapbacks: ['‼️']
+    tapbacks: ['‼️'],
+    createdAt: Date.now() - 1000 * 60 * 3
   },
   {
-    id: 'm4',
+    id: 'm3',
     type: 'agent',
     agentId: 'lovebrain',
-    text: '先别急。我知道你现在脑子已经开始跑八百集了，但一个「嗯嗯」不能直接判案。你要看他接下来有没有补动作。'
+    text: '先别急。我知道你现在脑子已经开始跑八百集了，但一个「嗯嗯」不能直接判案。你要看他接下来有没有补动作。',
+    createdAt: Date.now() - 1000 * 60 * 2
   }
 ]
 
@@ -138,23 +145,62 @@ function ChirpPage() {
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [activeAgentId, setActiveAgentId] = useState('lovebrain')
+  const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [mentionIndex, setMentionIndex] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [typingAgentId, setTypingAgentId] = useState(null)
   const [toast, setToast] = useState('')
   const timelineRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   const bird = useMemo(() => ({
     id: 'bird',
     name: 'Bird',
-    role: '管理员',
+    role: 'Admin',
     color: '#F5C878',
     avatar: BirdAvatar
   }), [])
 
   const visibleMembers = [{ id: 'user', name: userProfile.nickname, color: '#F5C878', avatar: UserAvatar }, bird, ...agents]
+  const mentionItems = useMemo(() => [
+    ...agents.map(agent => ({
+      id: agent.id,
+      label: agent.name,
+      insertText: `@${agent.name} `,
+      role: agent.role,
+      color: agent.color,
+      avatar: agent.avatar
+    })),
+    {
+      id: 'bird',
+      label: 'Bird',
+      insertText: '@Bird ',
+      role: 'Admin',
+      color: bird.color,
+      avatar: bird.avatar
+    },
+    {
+      id: 'all',
+      label: 'all',
+      insertText: '@all ',
+      role: 'Replies in order',
+      color: '#ECECEF',
+      avatar: null
+    }
+  ], [agents, bird])
+
+  const filteredMentionItems = useMemo(() => {
+    const normalizedQuery = mentionQuery.trim().toLowerCase()
+    if (!normalizedQuery) return mentionItems
+    return mentionItems.filter(item => (
+      item.label.toLowerCase().includes(normalizedQuery)
+      || item.role.toLowerCase().includes(normalizedQuery)
+    ))
+  }, [mentionItems, mentionQuery])
 
   const pushMessage = (message) => {
-    setMessages(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, ...message }])
+    setMessages(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, createdAt: Date.now(), ...message }])
     requestAnimationFrame(() => {
       if (timelineRef.current) timelineRef.current.scrollTop = timelineRef.current.scrollHeight
     })
@@ -187,6 +233,54 @@ function ChirpPage() {
     return mentionedAgent?.id || null
   }
 
+  const findMentionToken = (value) => {
+    const match = value.match(/(^|\s)@([^\s@]*)$/)
+    if (!match) return null
+    return {
+      start: match.index + match[1].length,
+      query: match[2] || ''
+    }
+  }
+
+  const updateInput = (value) => {
+    setInput(value)
+    const mentionToken = findMentionToken(value)
+    if (!mentionToken) {
+      setMentionOpen(false)
+      setMentionQuery('')
+      setMentionIndex(0)
+      return
+    }
+
+    setMentionOpen(true)
+    setMentionQuery(mentionToken.query)
+    setMentionIndex(0)
+  }
+
+  const insertMention = (item) => {
+    const mentionToken = findMentionToken(input)
+    if (!mentionToken) return
+
+    const nextInput = `${input.slice(0, mentionToken.start)}${item.insertText}`
+    setInput(nextInput)
+    setMentionOpen(false)
+    setMentionQuery('')
+    setMentionIndex(0)
+  }
+
+  const handleUploadFile = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      showToast('Image is larger than 8MB and cannot be uploaded.')
+      return
+    }
+
+    showToast('Image upload is not available yet.')
+  }
+
   const replyAsAgent = async (agent, overrideText, conversationOverride = null) => {
     let typingVisible = false
     const typingTimer = overrideText
@@ -210,10 +304,10 @@ function ChirpPage() {
 
     if (!replyText) {
       setTypingAgentId(null)
-      showToast('AI 连接失败，请稍后再试。')
+      showToast('AI connection failed. Please try again.')
       pushMessage({
         type: 'system',
-        text: `${agent.name} 暂时没有连上 AI。`
+        text: `${agent.name} is not connected right now.`
       })
       return
     }
@@ -234,13 +328,13 @@ function ChirpPage() {
   const addPersonaFromCommunity = () => {
     const candidate = PERSONA_POOL.find(persona => !agents.some(agent => agent.id === persona.id))
     if (!candidate) {
-      showToast('Persona 社区暂时没有更多模拟候选。')
+      showToast('No more mock personas available.')
       return null
     }
 
     setAgents(prev => [...prev, candidate])
-    pushMessage({ type: 'system', text: `${candidate.name} 加入了 ${planet.name}` })
-    showToast(`${candidate.name} 已加入群聊。`)
+    pushMessage({ type: 'system', text: `${candidate.name} joined ${planet.name}.` })
+    showToast(`${candidate.name} joined the chat.`)
     return candidate
   }
 
@@ -284,7 +378,7 @@ function ChirpPage() {
     const adminIntent = /(推荐|找|拉|加|踢|删|移除|改名|名称|背景|昵称|头像|persona|人格|成员)/.test(text)
 
     if (!adminIntent) {
-      await replyAsAgent(bird, '我在 Planet 里只做管理员。你要我拉人、踢人、改名、换背景，或者帮你找 persona，再叫我。')
+      await replyAsAgent(bird, 'I only handle admin tasks here. Ask me to find, add, remove, rename, or adjust the room.')
       return
     }
 
@@ -293,15 +387,15 @@ function ChirpPage() {
       await replyAsAgent(
         bird,
         candidate
-          ? `我看了一下最近的聊天，这个群现在有情绪和拆解，但少一个“慢下来问边界”的角色。我推荐 ${candidate.name}。你确认后我可以把 TA 拉进来。`
-          : '这批模拟 Persona 都在群里了。后面接真实社区搜索时，这里会继续给你补候选。'
+          ? `This room has emotion and logic covered, but it could use someone who slows things down and watches boundaries. I recommend ${candidate.name}.`
+          : 'All mock personas are already in this room.'
       )
       return
     }
 
     if (/(拉|加)/.test(text)) {
       const added = addPersonaFromCommunity()
-      await replyAsAgent(bird, added ? `成了，我把 ${added.name} 拉进群聊了。` : '暂时没有可加入的模拟候选。')
+      await replyAsAgent(bird, added ? `Done. I added ${added.name}.` : 'No mock persona is available right now.')
       return
     }
 
@@ -310,20 +404,20 @@ function ChirpPage() {
       if (!removed) return
       setAgents(prev => prev.slice(0, -1))
       if (activeAgentId === removed.id) setActiveAgentId(null)
-      pushMessage({ type: 'system', text: `${removed.name} 已离开 ${planet.name}` })
-      await replyAsAgent(bird, `成了，我把 ${removed.name} 请出去了。`)
+      pushMessage({ type: 'system', text: `${removed.name} left ${planet.name}.` })
+      await replyAsAgent(bird, `Done. I removed ${removed.name}.`)
       return
     }
 
     if (/(改名|名称)/.test(text)) {
-      setPlanet(prev => ({ ...prev, name: '喝水侠原地退役' }))
-      await replyAsAgent(bird, '成了，Planet 名字改好了。')
+      setPlanet(prev => ({ ...prev, name: 'Soft Reset' }))
+      await replyAsAgent(bird, 'Done. I renamed this Planet.')
       return
     }
 
     if (/背景/.test(text)) {
       setPlanet(prev => ({ ...prev, background: '#FFF8E7' }))
-      await replyAsAgent(bird, '换成暖一点的背景了。')
+      await replyAsAgent(bird, 'Done. I warmed up the background.')
     }
   }
 
@@ -333,6 +427,9 @@ function ChirpPage() {
 
     const mention = resolveMention(text)
     setInput('')
+    setMentionOpen(false)
+    setMentionQuery('')
+    setMentionIndex(0)
 
     if (!mention && !activeAgentId) {
       pushMessage({ type: 'memo', text })
@@ -349,7 +446,7 @@ function ChirpPage() {
         await replyAsAgent(agent, null, conversationWithUserMessage)
         await sleep(850)
       }
-      pushMessage({ type: 'system', text: '@all 结束，群聊回到安静状态。' })
+      pushMessage({ type: 'system', text: '@all finished.' })
       return
     }
 
@@ -364,7 +461,7 @@ function ChirpPage() {
 
     if (mention && activeAgentId && activeAgentId !== mention) {
       const previous = agents.find(agent => agent.id === activeAgentId)
-      if (previous) pushMessage({ type: 'system', text: `${previous.name} 闭麦，${nextAgent.name} 开麦。` })
+      if (previous) pushMessage({ type: 'system', text: `${previous.name} is muted. ${nextAgent.name} is active.` })
     }
 
     setActiveAgentId(nextAgent.id)
@@ -378,18 +475,18 @@ function ChirpPage() {
     const next = [...agents]
     ;[next[index], next[target]] = [next[target], next[index]]
     setAgents(next)
-    pushMessage({ type: 'system', text: '@all 发言顺序已调整。' })
+    pushMessage({ type: 'system', text: '@all order updated.' })
   }
 
   const removeAgent = (agentId) => {
     const removed = agents.find(agent => agent.id === agentId)
     setAgents(prev => prev.filter(agent => agent.id !== agentId))
     if (activeAgentId === agentId) setActiveAgentId(null)
-    if (removed) pushMessage({ type: 'system', text: `${removed.name} 已离开 ${planet.name}` })
+    if (removed) pushMessage({ type: 'system', text: `${removed.name} left ${planet.name}.` })
   }
 
   const updatePlanetName = (value) => {
-    setPlanet(prev => ({ ...prev, name: value || '未命名 Planet' }))
+    setPlanet(prev => ({ ...prev, name: value || 'Untitled Planet' }))
   }
 
   return (
@@ -420,7 +517,7 @@ function ChirpPage() {
         <main className={`chirp-main ${settingsOpen ? 'settings-open' : ''}`}>
           <section className="chirp-chat">
             <div className="chirp-timeline" ref={timelineRef}>
-              <div className="chirp-date">今天 10:18</div>
+              <div className="chirp-date">Today {formatMessageTime(new Date())}</div>
 
               {messages.map(message => (
                 <MessageBubble
@@ -438,36 +535,91 @@ function ChirpPage() {
 
             <footer className="chirp-composer">
               <div className="chirp-input-row">
+                <button
+                  className="chirp-upload-button"
+                  type="button"
+                  aria-label="Upload image"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  +
+                </button>
+                <input
+                  ref={fileInputRef}
+                  className="chirp-file-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadFile}
+                />
                 <div className="chirp-input-shell">
                   <textarea
                     rows="1"
                     value={input}
-                    onChange={(event) => setInput(event.target.value)}
+                    onChange={(event) => updateInput(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' && !event.shiftKey) {
+                        if (mentionOpen && filteredMentionItems.length > 0) {
+                          event.preventDefault()
+                          insertMention(filteredMentionItems[mentionIndex])
+                          return
+                        }
                         event.preventDefault()
                         handleSend()
                       }
+                      if (mentionOpen && filteredMentionItems.length > 0 && event.key === 'ArrowDown') {
+                        event.preventDefault()
+                        setMentionIndex(index => (index + 1) % filteredMentionItems.length)
+                      }
+                      if (mentionOpen && filteredMentionItems.length > 0 && event.key === 'ArrowUp') {
+                        event.preventDefault()
+                        setMentionIndex(index => (index - 1 + filteredMentionItems.length) % filteredMentionItems.length)
+                      }
+                      if (mentionOpen && event.key === 'Escape') {
+                        event.preventDefault()
+                        setMentionOpen(false)
+                      }
                     }}
-                    placeholder="@ persona来回复或@all"
+                    placeholder="@ to start a conversation"
                   />
-                  <button className="chirp-send" onClick={handleSend} aria-label="Send">
-                    <svg viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>
-                  </button>
                 </div>
+                <button className="chirp-send" onClick={handleSend} aria-label="Send">
+                  <svg viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>
+                </button>
+                {mentionOpen && filteredMentionItems.length > 0 && (
+                  <div className="chirp-mention-menu">
+                    {filteredMentionItems.map((item, index) => (
+                      <button
+                        key={item.id}
+                        className={index === mentionIndex ? 'is-active' : ''}
+                        type="button"
+                        onMouseDown={(event) => {
+                          event.preventDefault()
+                          insertMention(item)
+                        }}
+                      >
+                        <span className="chirp-mention-avatar" style={{ backgroundColor: item.color }}>
+                          {item.avatar ? <item.avatar /> : 'all'}
+                        </span>
+                        <span>
+                          <strong>{item.label}</strong>
+                          <small>{item.role}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </footer>
           </section>
 
           <aside className="chirp-settings">
             <div className="chirp-settings-head">
-              <strong>聊天信息</strong>
+              <strong>Chat Info</strong>
               <button onClick={() => setSettingsOpen(false)} aria-label="Close settings">×</button>
             </div>
 
             <div className="chirp-settings-body">
               <section>
-                <h3>成员名称</h3>
+                <h3>Members</h3>
                 <div className="chirp-members-grid">
                   {visibleMembers.map(member => (
                     <div className="chirp-member" key={member.id}>
@@ -477,38 +629,38 @@ function ChirpPage() {
                       <span>{member.name}</span>
                     </div>
                   ))}
-                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label="添加成员">
+                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label="Add member">
                     <b>+</b>
                   </button>
-                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label="移除成员">
+                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label="Remove member">
                     <b>-</b>
                   </button>
                 </div>
               </section>
 
               <section>
-                <h3>管理员</h3>
+                <h3>Admin</h3>
                 <div className="chirp-admin-card">
                   <div className="chirp-admin-avatar"><BirdAvatar /></div>
                   <div>
                     <strong>Bird</strong>
-                    <p>只有被 @ 并提出管理需求时回复</p>
+                    <p>Only replies when mentioned for admin tasks</p>
                   </div>
                 </div>
               </section>
 
               <section>
-                <h3>Planet 设置</h3>
+                <h3>Planet Settings</h3>
                 <div className="chirp-settings-card">
                   <label>
-                    <span>Planet 名称</span>
+                    <span>Planet Name</span>
                     <input value={planet.name} onChange={(event) => updatePlanetName(event.target.value)} />
                   </label>
                 </div>
               </section>
 
               <section>
-                <h3>@all 发言顺序</h3>
+                <h3>@all Order</h3>
                 <div className="chirp-agent-list">
                   {agents.map((agent, index) => (
                     <div className="chirp-agent-row" key={agent.id}>
@@ -520,7 +672,6 @@ function ChirpPage() {
                       <div className="chirp-agent-actions">
                         <button onClick={() => moveAgent(agent.id, -1)}>↑</button>
                         <button onClick={() => moveAgent(agent.id, 1)}>↓</button>
-                        <button onClick={() => removeAgent(agent.id)}>×</button>
                       </div>
                     </div>
                   ))}
@@ -561,7 +712,7 @@ function MessageBubble({ message, agents, bird }) {
               ))}
             </div>
           )}
-          {message.read && <span className="chirp-read-receipt">已读</span>}
+          {message.read && <span className="chirp-read-receipt">{formatMessageTime(new Date(message.createdAt))} Read</span>}
         </div>
         <div className="chirp-user-side-avatar">
           <UserAvatar />
