@@ -4,14 +4,14 @@ import { supabase } from './supabaseClient'
 import HomePage from './pages/HomePage'
 import EditorPage from './pages/EditorPage'
 import LoginPage from './pages/LoginPage'
-import ChirpPage from './pages/ChirpPage'
+import ChirpHomePage from './pages/ChirpHomePage'
 import { extractBrandKit } from './services/aiService'
 import './App.css'
 
 const parseRoute = () => {
   const hash = window.location.hash.slice(1) || '/'
   const parts = hash.split('/').filter(Boolean)
-  // Routes: / (landing), brandkit (brand kit home), brandkit/editor/:id, chirp, login
+  // Routes: / (landing), brandkit (brand kit home), brandkit/editor/:id, chirp, chirp/planet/:id, login
   return {
     section: parts[0] || 'landing',
     page: parts[1] || null,
@@ -291,6 +291,19 @@ function AppContent() {
     navigateTo()
   }
 
+  const handleGlobalLogoClick = () => {
+    navigateTo()
+  }
+
+  const handleGlobalBrandTextClick = () => {
+    if (currentSection === 'chirp') {
+      window.dispatchEvent(new CustomEvent('chirp:open-menu'))
+      return
+    }
+
+    navigateTo()
+  }
+
   const isWaitingForEditorProject = currentSection === 'brandkit' && currentPage === 'editor' && !currentProject && initialEditorProjectId.current
   const isPublicSection = currentSection === 'landing' || currentSection === 'chirp'
   if (!isPublicSection && (loading || dataLoading || isWaitingForEditorProject)) {
@@ -337,7 +350,7 @@ function AppContent() {
     }
 
     if (currentSection === 'chirp') {
-      return <ChirpPage />
+      return <ChirpHomePage page={currentPage} id={currentId} />
     }
 
     // Landing page
@@ -356,26 +369,35 @@ function AppContent() {
   return (
     <div className="app">
       {/* Global Top Nav */}
-      <nav className="global-nav">
-        <a className="global-nav-brand" onClick={() => navigateTo()}>
-          <img src="/logo-home-transparent.png" alt="Logo" className="global-nav-logo" />
-          SYL.AILABS
-        </a>
-
-        <div className="global-nav-links">
-          <a
-            className={`global-nav-link ${currentSection === 'brandkit' ? 'active' : ''}`}
-            onClick={() => navigateTo('brandkit')}
-          >
-            Brand Kit Extractor
-          </a>
-          <a
-            className={`global-nav-link ${currentSection === 'chirp' ? 'active' : ''}`}
-            onClick={() => navigateTo('chirp')}
-          >
-            Chirp
-          </a>
+      <nav className={`global-nav ${currentSection === 'chirp' ? 'chirp-nav' : ''}`}>
+        <div className="global-nav-brand">
+          <img
+            src="/logo-home-transparent.png"
+            alt="Logo"
+            className="global-nav-logo"
+            onClick={handleGlobalLogoClick}
+          />
+          <button className="global-nav-brand-text" type="button" onClick={handleGlobalBrandTextClick}>
+            {currentSection === 'chirp' ? 'chirp' : 'SYL.AILABS'}
+          </button>
         </div>
+
+        {currentSection !== 'chirp' && (
+          <div className="global-nav-links">
+            <a
+              className={`global-nav-link ${currentSection === 'brandkit' ? 'active' : ''}`}
+              onClick={() => navigateTo('brandkit')}
+            >
+              Brand Kit Extractor
+            </a>
+            <a
+              className={`global-nav-link ${currentSection === 'chirp' ? 'active' : ''}`}
+              onClick={() => navigateTo('chirp')}
+            >
+              Chirp
+            </a>
+          </div>
+        )}
 
         <div className="global-nav-right">
           {user ? (

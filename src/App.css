@@ -27,16 +27,40 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    user-select: none;
+}
+
+.global-nav-brand-text {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
     font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.02em;
     color: #1a2e22;
     cursor: pointer;
-    user-select: none;
     transition: color 0.2s;
 }
 
-.global-nav-brand:hover {
+.global-nav-brand-text:hover {
+    color: #2E5C46;
+}
+
+.global-nav.chirp-nav {
+    background: rgba(240, 242, 240, 0.97);
+    border-bottom-color: rgba(46, 92, 70, 0.15);
+}
+
+.global-nav.chirp-nav .global-nav-brand-text {
+    color: #1a2e22;
+    font-family: inherit;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    text-transform: lowercase;
+}
+
+.global-nav.chirp-nav .global-nav-brand-text:hover {
     color: #2E5C46;
 }
 
@@ -44,6 +68,7 @@
     height: 32px;
     width: auto;
     object-fit: contain;
+    cursor: pointer;
 }
 
 .global-nav-links {

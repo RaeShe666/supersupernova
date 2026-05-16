@@ -1,0 +1,947 @@
+@font-face {
+  font-family: "ArimoChirp";
+  src: url("/fonts/Arimo-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
+}
+
+@font-face {
+  font-family: "ArimoChirp";
+  src: url("/fonts/Arimo-SemiBold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
+}
+
+.chirp-home-page,
+.chirp-home-detail {
+  --page-bg: #FAFAF7;
+  --ink: #1F1F1F;
+  --ink-2: #2A2A2A;
+  --muted: #6B6B6B;
+  --muted-2: #8A8A8A;
+  --line: rgba(42, 42, 42, 0.08);
+  --line-2: rgba(42, 42, 42, 0.14);
+  height: calc(100vh - 56px);
+  min-height: 0;
+  background: var(--page-bg);
+  color: var(--ink);
+  font-family: "ArimoChirp", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.chirp-home-page {
+  overflow-y: auto;
+}
+
+.chirp-home-content,
+.chirp-home-page .content {
+  max-width: 944px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 36px 48px;
+}
+
+.chirp-home-page .sec-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 14px 4px;
+  font-weight: 500;
+}
+
+.chirp-home-page .bird-strip {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  margin-bottom: 36px;
+}
+
+.chirp-home-page .bird-avatar {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #FFCB52;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.chirp-home-page .bird-avatar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chirp-home-page .bird-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chirp-home-page .bird-name {
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.chirp-home-page .bird-msg {
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.chirp-home-page .bird-msg em {
+  font-style: normal;
+  font-weight: 500;
+  padding: 6px 14px 7px;
+  display: inline-block;
+  line-height: 1;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M2,16 C6,7 16,11 28,8 C42,4 56,12 70,9 C84,5 98,12 110,8 C117,7 119,14 117,21 C119,28 112,33 100,32 C84,31 66,34 50,32 C34,30 18,34 8,31 C2,29 0,24 1,18 C1,17 1,16 2,16 Z' fill='%23FFD157' opacity='0.9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+.chirp-home-page .planets-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-bottom: 44px;
+}
+
+.chirp-home-page .planet-card {
+  flex: 1 1 240px;
+  min-width: 240px;
+  max-width: 300px;
+  border-radius: 20px;
+  padding: 24px 20px 22px;
+  min-height: 196px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: none;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+}
+
+.chirp-home-page .planet-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.chirp-home-drawer .planet-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.chirp-home-page .planet-card.pc-love {
+  background: linear-gradient(135deg, #F8D4DC 0%, #F1C7DB 60%, #E8C5E0 100%);
+}
+
+.chirp-home-page .planet-card.pc-work {
+  background: linear-gradient(135deg, #C9DCEC 0%, #D6D2EA 60%, #DCC9E7 100%);
+}
+
+.chirp-home-page .planet-card.pc-create {
+  background: #FFFFFF;
+  border: 1.5px dashed rgba(42, 42, 42, 0.22);
+}
+
+.chirp-home-page .pc-avatar,
+.chirp-home-page .pc-create-illu {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid rgba(42, 42, 42, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.chirp-home-page .pc-avatar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chirp-home-page .pc-create-illu svg {
+  width: 38px;
+  height: 38px;
+  display: block;
+}
+
+.chirp-home-page .pc-name,
+.chirp-home-page .pc-create-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.chirp-home-page .pc-quote,
+.chirp-home-page .pc-create-desc {
+  font-size: 13px;
+  color: rgba(42, 42, 42, 0.7);
+  line-height: 1.45;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  white-space: nowrap;
+}
+
+.chirp-home-page .pc-time,
+.chirp-home-drawer .pc-time {
+  margin-top: auto;
+  color: rgba(42, 42, 42, 0.55);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.chirp-home-page .pc-create-desc {
+  color: var(--muted-2);
+  display: block;
+}
+
+.chirp-home-page .pc-create-btn {
+  margin-top: auto;
+  background: var(--ink);
+  color: #FAFAF7;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 14px 7px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+}
+
+.chirp-home-page .pc-create-btn .ic {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FAFAF7;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chirp-home-page .moments-card {
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 24px 28px 22px;
+}
+
+.chirp-home-page .moments-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.chirp-home-page .moments-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chirp-home-page .moment-themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.chirp-home-page .moment-theme {
+  padding: 12px 14px 12px 0;
+}
+
+.chirp-home-page .moment-theme + .moment-theme {
+  border-left: 1px solid var(--line);
+  padding-left: 18px;
+}
+
+.chirp-home-page .mt-label {
+  font-size: 10.5px;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chirp-home-page .mt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C4973A;
+  display: inline-block;
+}
+
+.chirp-home-page .mt-label.shared .mt-dot {
+  background: #7A9DB8;
+}
+
+.chirp-home-page .mt-text {
+  font-family: "Caveat", "Long Cang", "Kalam", cursive;
+  font-size: 25px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chirp-home-page .mt-text:lang(zh),
+.chirp-home-page .mt-text.zh {
+  font-family: "Long Cang", "Caveat", cursive;
+  font-size: 26px;
+  line-height: 1.35;
+}
+
+.chirp-home-page .mt-date {
+  font-size: 12px;
+  color: var(--muted-2);
+  letter-spacing: 0.2px;
+}
+
+.chirp-home-page .moments-cta-row {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chirp-home-page .moments-cta {
+  background: var(--ink);
+  color: #FAFAF7;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: inherit;
+  transition: transform 0.15s;
+}
+
+.chirp-home-page .moments-cta:hover {
+  transform: translateX(2px);
+}
+
+.chirp-home-page .moments-cta-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chirp-home-page .moments-cta-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.chirp-home-rail-button {
+  position: fixed;
+  left: 18px;
+  top: 78px;
+  z-index: 180;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(42, 42, 42, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 24px rgba(31, 31, 31, 0.08);
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.chirp-home-rail-button span {
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--ink-2);
+  display: block;
+}
+
+.chirp-home-bird-strip {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  margin-bottom: 36px;
+}
+
+.chirp-home-bird-avatar {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #FFCB52;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.chirp-home-bird-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chirp-home-bird-copy p {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.chirp-home-bird-copy div {
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.chirp-home-bird-copy button {
+  border: 0;
+  font: inherit;
+  color: var(--ink-2);
+  font-weight: 600;
+  padding: 6px 14px 7px;
+  display: inline-block;
+  line-height: 1;
+  cursor: pointer;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M2,16 C6,7 16,11 28,8 C42,4 56,12 70,9 C84,5 98,12 110,8 C117,7 119,14 117,21 C119,28 112,33 100,32 C84,31 66,34 50,32 C34,30 18,34 8,31 C2,29 0,24 1,18 C1,17 1,16 2,16 Z' fill='%23FFD157' opacity='0.9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+.chirp-home-section-head {
+  margin: 0 0 14px 4px;
+}
+
+.chirp-home-section-head p {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.chirp-home-planets-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-bottom: 44px;
+}
+
+.chirp-home-create-card,
+.chirp-home-planet-card {
+  flex: 1 1 240px;
+  min-width: 240px;
+  max-width: 300px;
+  border-radius: 20px;
+  padding: 24px 20px 22px;
+  min-height: 196px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: none;
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+}
+
+.chirp-home-create-card:hover,
+.chirp-home-planet-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.chirp-home-create-card {
+  background: #FFFFFF;
+  border: 1.5px dashed rgba(42, 42, 42, 0.22);
+}
+
+.chirp-home-planet-card.love {
+  background: linear-gradient(135deg, #F8D4DC 0%, #F1C7DB 60%, #E8C5E0 100%);
+}
+
+.chirp-home-planet-card.work {
+  background: linear-gradient(135deg, #C9DCEC 0%, #D6D2EA 60%, #DCC9E7 100%);
+}
+
+.chirp-home-create-icon,
+.chirp-home-planet-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid rgba(42, 42, 42, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.chirp-home-create-icon svg {
+  width: 38px;
+  height: 38px;
+  display: block;
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chirp-home-create-icon circle {
+  fill: #F4F1E6;
+}
+
+.chirp-home-create-card strong,
+.chirp-home-planet-card strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.chirp-home-create-card small,
+.chirp-home-planet-card small {
+  font-size: 13px;
+  color: rgba(42, 42, 42, 0.7);
+  line-height: 1.45;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  white-space: nowrap;
+}
+
+.chirp-home-planet-card time {
+  margin-top: auto;
+  color: rgba(42, 42, 42, 0.55);
+  font-size: 12px;
+}
+
+.chirp-home-planet-text {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.chirp-home-moments-card {
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 24px 28px 22px;
+}
+
+.chirp-home-moment-themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.chirp-home-moment-theme {
+  padding: 12px 14px 12px 0;
+}
+
+.chirp-home-moment-theme + .chirp-home-moment-theme {
+  border-left: 1px solid var(--line);
+  padding-left: 18px;
+}
+
+.chirp-home-moment-label {
+  font-size: 10.5px;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chirp-home-moment-label span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #C4973A;
+  display: inline-block;
+}
+
+.chirp-home-moment-label.shared span {
+  background: #7A9DB8;
+}
+
+.chirp-home-moment-text {
+  font-family: "Caveat", "Long Cang", "Kalam", cursive;
+  font-size: 25px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chirp-home-moment-text.zh {
+  font-family: "Long Cang", "Caveat", cursive;
+  font-size: 26px;
+  line-height: 1.35;
+}
+
+.chirp-home-moment-date {
+  font-size: 12px;
+  color: var(--muted-2);
+  letter-spacing: 0.2px;
+}
+
+.chirp-home-moments-cta-row {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chirp-home-moments-cta {
+  background: var(--ink);
+  color: #FAFAF7;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 20px 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: inherit;
+  transition: transform 0.15s;
+}
+
+.chirp-home-moments-cta:hover {
+  transform: translateX(2px);
+}
+
+.chirp-home-moments-cta span {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chirp-home-moments-cta svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: none;
+  stroke: #FAFAF7;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chirp-home-drawer-scrim {
+  position: fixed;
+  inset: 56px 0 0;
+  z-index: 240;
+  border: 0;
+  background: rgba(18, 18, 18, 0.28);
+  cursor: default;
+}
+
+.chirp-home-drawer {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  bottom: 0;
+  z-index: 250;
+  width: min(340px, 88vw);
+  background: rgba(250, 250, 247, 0.98);
+  box-shadow: 20px 0 40px rgba(31, 31, 31, 0.12);
+  transform: translateX(-100%);
+  transition: transform 180ms ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.chirp-home-drawer.open {
+  transform: translateX(0);
+}
+
+.chirp-home-drawer-head {
+  height: 62px;
+  border-bottom: 1px solid rgba(217, 217, 221, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.chirp-home-drawer-head strong {
+  font-size: 18px;
+}
+
+.chirp-home-drawer-head button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chirp-home-menu-list,
+.chirp-home-drawer-planets {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.chirp-home-menu-list button,
+.chirp-home-drawer-create {
+  min-height: 72px;
+  border: 1px solid rgba(217, 217, 221, 0.55);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chirp-home-menu-list span,
+.chirp-home-drawer-create span {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #F2F2F3;
+  display: grid;
+  place-items: center;
+  color: #77777C;
+  font-size: 22px;
+}
+
+.chirp-home-menu-list small {
+  color: var(--muted-2);
+  margin-left: auto;
+}
+
+.chirp-home-drawer-planets .chirp-home-planet-card.compact {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 92px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  text-align: left;
+  gap: 12px;
+  align-items: center;
+}
+
+.chirp-home-planet-card.compact .chirp-home-planet-avatar {
+  width: 48px;
+  height: 48px;
+  margin-top: 0;
+}
+
+.chirp-home-planet-card.compact .chirp-home-planet-text {
+  gap: 4px;
+}
+
+.chirp-home-planet-card.compact strong {
+  font-size: 16px;
+}
+
+.chirp-home-planet-card.compact time {
+  margin: 0;
+}
+
+.chirp-home-drawer-admin {
+  flex: 0 0 auto;
+  margin: 0 18px 18px;
+  padding: 13px;
+  border: 1px solid rgba(217, 217, 221, 0.55);
+  border-radius: 18px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chirp-home-drawer-admin > span {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.chirp-home-drawer-admin strong,
+.chirp-home-drawer-admin small {
+  display: block;
+}
+
+.chirp-home-drawer-admin small {
+  color: #77777C;
+  margin-top: 2px;
+}
+
+.chirp-home-page .moments-cta {
+  padding: 7px 14px 7px 7px;
+  font-size: 11px;
+  letter-spacing: 1.6px;
+}
+
+.chirp-home-page .moments-cta-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FAFAF7;
+}
+
+.chirp-home-page .moments-cta-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--ink);
+}
+
+.chirp-home-rail-button {
+  gap: 0;
+}
+
+.chirp-home-rail-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chirp-home-drawer-planets {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chirp-home-drawer .drawer-planet-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 154px;
+  flex: 0 0 auto;
+  padding: 18px 16px;
+}
+
+.chirp-home-drawer .drawer-planet-card .pc-avatar,
+.chirp-home-drawer .drawer-planet-card .pc-create-illu {
+  width: 50px;
+  height: 50px;
+}
+
+.chirp-home-drawer .drawer-planet-card .pc-create-illu svg {
+  width: 34px;
+  height: 34px;
+}
+
+@media (max-width: 500px) {
+  .chirp-home-content {
+    padding: 22px 18px 42px 72px;
+  }
+
+  .chirp-home-create-card,
+  .chirp-home-planet-card {
+    max-width: 100%;
+  }
+}

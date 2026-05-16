@@ -1,170 +1,65 @@
 import { useMemo, useRef, useState } from 'react'
+import {
+  BIRD,
+  CHIRP_PLANETS,
+  DeerAvatar,
+  PERSONA_POOL,
+  UserAvatar,
+  formatMessageTime,
+  getPersonasForPlanet,
+  getPlanetRecent,
+  writePlanetActivity
+} from './chirpShared'
 import './ChirpPage.css'
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 
-const formatMessageTime = (date = new Date()) => (
-  new Intl.DateTimeFormat('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(date)
-)
-
-const DeerAvatar = () => (
-  <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
-    <path d="M20 24c-5-8-9-9-12-7" />
-    <path d="M44 24c5-8 9-9 12-7" />
-    <path d="M25 17c-2-7-6-9-10-9" />
-    <path d="M39 17c2-7 6-9 10-9" />
-    <ellipse cx="32" cy="36" rx="17" ry="15" />
-    <circle cx="25" cy="34" r="2.5" />
-    <circle cx="39" cy="34" r="2.5" />
-    <path d="M29 42c2 2 4 2 6 0" />
-  </svg>
-)
-
-const BirdAvatar = () => (
-  <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
-    <ellipse cx="31" cy="35" rx="18" ry="15" />
-    <circle cx="25" cy="31" r="2.5" />
-    <path d="M36 31l12-4-8 9z" />
-    <path d="M20 48c6 4 17 4 24-1" />
-  </svg>
-)
-
-const CatAvatar = () => (
-  <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
-    <path d="M18 25 15 10l13 9" />
-    <path d="M46 25 49 10l-13 9" />
-    <path d="M16 34c0-12 8-19 16-19s16 7 16 19-7 18-16 18-16-6-16-18z" />
-    <circle cx="25" cy="34" r="2.5" />
-    <circle cx="39" cy="34" r="2.5" />
-    <path d="M32 39v4" />
-    <path d="M25 45c4 3 10 3 14 0" />
-  </svg>
-)
-
-const FoxAvatar = () => (
-  <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
-    <path d="M12 25 22 9l10 11L42 9l10 16c1 17-7 27-20 27S11 42 12 25z" />
-    <circle cx="25" cy="32" r="2.5" />
-    <circle cx="39" cy="32" r="2.5" />
-    <path d="M28 40c2 2 6 2 8 0" />
-  </svg>
-)
-
-const OwlAvatar = () => (
-  <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
-    <path d="M17 23 13 12l11 5c5-3 11-3 16 0l11-5-4 11c4 5 5 13 2 19-4 9-13 12-17 12S19 51 15 42c-3-6-2-14 2-19z" />
-    <circle cx="25" cy="33" r="5" />
-    <circle cx="39" cy="33" r="5" />
-    <path d="M30 42h4" />
-  </svg>
-)
-
-const RabbitAvatar = () => (
-  <svg viewBox="0 0 64 64" className="chirp-avatar-svg" aria-hidden="true">
-    <path d="M23 23C18 9 19 3 24 3s7 8 7 18" />
-    <path d="M41 23C46 9 45 3 40 3s-7 8-7 18" />
-    <ellipse cx="32" cy="39" rx="17" ry="15" />
-    <circle cx="25" cy="37" r="2.5" />
-    <circle cx="39" cy="37" r="2.5" />
-    <path d="M28 45c2 2 6 2 8 0" />
-  </svg>
-)
-
-const PERSONA_POOL = [
-  {
-    id: 'lovebrain',
-    name: '恋爱脑',
-    role: '情绪雷达',
-    color: '#E8A29C',
-    avatar: CatAvatar,
-    emoji: '‼️',
-    reply: '我先承认，我恋爱脑。但这次我不乱嗑：你在意的不是他回得慢，是他有没有把你放进他的节奏里。'
-  },
-  {
-    id: 'strategist',
-    name: '军师',
-    role: '关系拆解',
-    color: '#A8C5DA',
-    avatar: FoxAvatar,
-    emoji: '🧩',
-    reply: '先别急着判死刑。把证据分三类：他说了什么、做了什么、你脑补了什么。现在第三类明显超标。'
-  },
-  {
-    id: 'owl',
-    name: '夜航猫头鹰',
-    role: '边界观察',
-    color: '#C4B0D9',
-    avatar: OwlAvatar,
-    emoji: '🌙',
-    reply: '这个群缺一个慢一点的人。我会问你：这件事为什么让你这么快把自己放到低位？'
-  },
-  {
-    id: 'rabbit',
-    name: '软着陆',
-    role: '温柔承接',
-    color: '#A8C5A0',
-    avatar: RabbitAvatar,
-    emoji: '🫧',
-    reply: '先不分析了。你现在像是被悬在半空，我先帮你落地：喝口水，告诉我你最怕的那个结果是什么。'
+const createInitialMessages = (planet) => {
+  if (planet?.id === 'work') {
+    return [
+      { id: 'm1', type: 'memo', text: '明天要讲那个方案，我不想显得太用力，但又怕被忽略。', createdAt: Date.now() - 1000 * 60 * 5 },
+      { id: 'm2', type: 'user', text: '@军师 这个会我应该怎么开头？', read: true, createdAt: Date.now() - 1000 * 60 * 4 },
+      { id: 'm3', type: 'agent', agentId: 'strategist', text: '先别证明你很努力，先定义这场会要拿到什么结果。开头用一句话框住问题，再给两个选择，让他们进你的结构里。', createdAt: Date.now() - 1000 * 60 * 3 }
+    ]
   }
-]
 
-const INITIAL_MESSAGES = [
-  {
-    id: 'm1',
-    type: 'memo',
-    text: '他今天只回了一个「嗯嗯」，我有点想装作没事，但其实一直在想。',
-    createdAt: Date.now() - 1000 * 60 * 4
-  },
-  {
-    id: 'm2',
-    type: 'user',
-    text: '@恋爱脑 这是不是有点冷掉了？',
-    read: true,
-    tapbacks: ['‼️'],
-    createdAt: Date.now() - 1000 * 60 * 3
-  },
-  {
-    id: 'm3',
-    type: 'agent',
-    agentId: 'lovebrain',
-    text: '先别急。我知道你现在脑子已经开始跑八百集了，但一个「嗯嗯」不能直接判案。你要看他接下来有没有补动作。',
-    createdAt: Date.now() - 1000 * 60 * 2
-  }
-]
+  return [
+    { id: 'm1', type: 'memo', text: '他今天只回了一个“嗯嗯”，我有点想装作没事，但其实一直在想。', createdAt: Date.now() - 1000 * 60 * 4 },
+    { id: 'm2', type: 'user', text: '@恋爱脑 这是不是有点冷了？', read: true, tapbacks: ['🙂'], createdAt: Date.now() - 1000 * 60 * 3 },
+    { id: 'm3', type: 'agent', agentId: 'lovebrain', text: '先别急。我知道你现在脑子已经开始跑八百集了，但一个“嗯嗯”不能直接判案，你要看他接下来有没有补动作。', createdAt: Date.now() - 1000 * 60 * 2 }
+  ]
+}
 
-function ChirpPage() {
-  const [planet, setPlanet] = useState({ name: '恋爱观察室', background: '#FAFAF7' })
-  const [userProfile, setUserProfile] = useState({ nickname: '鹿', avatar: 'S' })
-  const [agents, setAgents] = useState(PERSONA_POOL.slice(0, 2))
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
+function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
+  const initialAgents = useMemo(() => getPersonasForPlanet(planetConfig), [planetConfig])
+  const [planet, setPlanet] = useState({
+    id: planetConfig.id,
+    name: planetConfig.roomName,
+    type: planetConfig.type,
+    tone: planetConfig.tone,
+    background: planetConfig.background
+  })
+  const [userProfile] = useState({ nickname: '鹿', avatar: 'S' })
+  const [agents, setAgents] = useState(initialAgents)
+  const [messages, setMessages] = useState(() => createInitialMessages(planetConfig))
   const [input, setInput] = useState('')
-  const [activeAgentId, setActiveAgentId] = useState('lovebrain')
+  const [activeAgentId, setActiveAgentId] = useState(initialAgents[0]?.id || null)
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionIndex, setMentionIndex] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsDraft, setSettingsDraft] = useState({ name: '恋爱观察室' })
+  const [settingsDraft, setSettingsDraft] = useState({ name: planetConfig.roomName })
   const [typingAgentId, setTypingAgentId] = useState(null)
   const [toast, setToast] = useState('')
   const timelineRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  const bird = useMemo(() => ({
-    id: 'bird',
-    name: 'Bird',
-    role: 'Admin',
-    color: '#F5C878',
-    avatar: BirdAvatar
-  }), [])
-
+  const bird = BIRD
   const visibleMembers = [{ id: 'user', name: userProfile.nickname, color: '#F5C878', avatar: UserAvatar }, bird, ...agents]
   const memberCount = visibleMembers.length
+  const RoomAvatar = planetConfig.avatar || DeerAvatar
+
   const mentionItems = useMemo(() => [
     ...agents.map(agent => ({
       id: agent.id,
@@ -174,22 +69,8 @@ function ChirpPage() {
       color: agent.color,
       avatar: agent.avatar
     })),
-    {
-      id: 'bird',
-      label: 'Bird',
-      insertText: '@Bird ',
-      role: 'Admin',
-      color: bird.color,
-      avatar: bird.avatar
-    },
-    {
-      id: 'all',
-      label: 'all',
-      insertText: '@all ',
-      role: 'Replies in order',
-      color: '#ECECEF',
-      avatar: null
-    }
+    { id: 'bird', label: 'Bird', insertText: '@Bird ', role: 'Admin', color: bird.color, avatar: bird.avatar },
+    { id: 'all', label: 'all', insertText: '@all ', role: 'Replies in order', color: '#ECECEF', avatar: null }
   ], [agents, bird])
 
   const filteredMentionItems = useMemo(() => {
@@ -206,6 +87,10 @@ function ChirpPage() {
     requestAnimationFrame(() => {
       if (timelineRef.current) timelineRef.current.scrollTop = timelineRef.current.scrollHeight
     })
+  }
+
+  const rememberUserMessage = (text, timestamp = Date.now()) => {
+    writePlanetActivity(planet.id, text, timestamp)
   }
 
   const addTapbackToLastUserMessage = (emoji) => {
@@ -238,10 +123,7 @@ function ChirpPage() {
   const findMentionToken = (value) => {
     const match = value.match(/(^|\s)@([^\s@]*)$/)
     if (!match) return null
-    return {
-      start: match.index + match[1].length,
-      query: match[2] || ''
-    }
+    return { start: match.index + match[1].length, query: match[2] || '' }
   }
 
   const updateInput = (value) => {
@@ -253,7 +135,6 @@ function ChirpPage() {
       setMentionIndex(0)
       return
     }
-
     setMentionOpen(true)
     setMentionQuery(mentionToken.query)
     setMentionIndex(0)
@@ -262,9 +143,7 @@ function ChirpPage() {
   const insertMention = (item) => {
     const mentionToken = findMentionToken(input)
     if (!mentionToken) return
-
-    const nextInput = `${input.slice(0, mentionToken.start)}${item.insertText}`
-    setInput(nextInput)
+    setInput(`${input.slice(0, mentionToken.start)}${item.insertText}`)
     setMentionOpen(false)
     setMentionQuery('')
     setMentionIndex(0)
@@ -274,89 +153,26 @@ function ChirpPage() {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-
     if (file.size > MAX_UPLOAD_BYTES) {
       showToast('Image is larger than 8MB and cannot be uploaded.')
       return
     }
-
     showToast('Image upload is not available yet.')
-  }
-
-  const replyAsAgent = async (agent, overrideText, conversationOverride = null) => {
-    let typingVisible = false
-    const typingTimer = overrideText
-      ? null
-      : window.setTimeout(() => {
-        typingVisible = true
-        setTypingAgentId(agent.id)
-      }, 2000)
-
-    const deepseekReply = overrideText ? null : await requestAgentReply(agent, conversationOverride || messages)
-    if (typingTimer) window.clearTimeout(typingTimer)
-
-    const replyText = overrideText || deepseekReply?.text
-    const tapback = deepseekReply?.emoji || null
-
-    if (!replyText && tapback) {
-      setTypingAgentId(null)
-      addTapbackToLastUserMessage(tapback)
-      return
-    }
-
-    if (!replyText) {
-      setTypingAgentId(null)
-      showToast('AI connection failed. Please try again.')
-      pushMessage({
-        type: 'system',
-        text: `${agent.name} is not connected right now.`
-      })
-      return
-    }
-
-    if (typingVisible) {
-      await sleep(380)
-    }
-
-    setTypingAgentId(null)
-    addTapbackToLastUserMessage(tapback)
-    pushMessage({
-      type: 'agent',
-      agentId: agent.id,
-      text: replyText
-    })
-  }
-
-  const addPersonaFromCommunity = () => {
-    const candidate = PERSONA_POOL.find(persona => !agents.some(agent => agent.id === persona.id))
-    if (!candidate) {
-      showToast('No more mock personas available.')
-      return null
-    }
-
-    setAgents(prev => [...prev, candidate])
-    showToast(`${candidate.name} joined the chat.`)
-    return candidate
   }
 
   const requestAgentReply = async (agent, currentMessages) => {
     try {
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       const apiBase = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8080' : '')
+      const recent = getPlanetRecent(planet)
       const response = await fetch(`${apiBase}/api/chirp/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planet: {
-            name: planet.name,
-            background: planet.background
-          },
+          planet: { ...planet, recentUserMessage: recent.rawText || recent.text, recentUserMessageAt: recent.timestamp },
           user: userProfile,
-          agent: {
-            id: agent.id,
-            name: agent.name,
-            role: agent.role
-          },
+          agent: { id: agent.id, name: agent.name, role: agent.role },
+          members: agents.map(({ id, name, role }) => ({ id, name, role })),
           messages: currentMessages.slice(-12).map(message => ({
             type: message.type,
             text: message.text,
@@ -370,37 +186,70 @@ function ChirpPage() {
       if (!result?.success) return null
       return result.reply
     } catch (error) {
-      console.warn('Chirp DeepSeek reply failed:', error)
+      console.warn('Chirp reply failed:', error)
       return null
     }
   }
 
-  const handleBirdAdmin = async (text) => {
-    const adminIntent = /(推荐|找|拉|加|踢|删|移除|改名|名称|背景|昵称|头像|persona|人格|成员)/.test(text)
+  const replyAsAgent = async (agent, overrideText, conversationOverride = null) => {
+    let typingVisible = false
+    const typingTimer = overrideText ? null : window.setTimeout(() => {
+      typingVisible = true
+      setTypingAgentId(agent.id)
+    }, 2000)
 
+    const modelReply = overrideText ? null : await requestAgentReply(agent, conversationOverride || messages)
+    if (typingTimer) window.clearTimeout(typingTimer)
+
+    const replyText = overrideText || modelReply?.text
+    const tapback = modelReply?.emoji || null
+
+    if (!replyText && tapback) {
+      setTypingAgentId(null)
+      addTapbackToLastUserMessage(tapback)
+      return
+    }
+
+    if (!replyText) {
+      setTypingAgentId(null)
+      showToast('AI connection failed. Please try again.')
+      return
+    }
+
+    if (typingVisible) await sleep(380)
+    setTypingAgentId(null)
+    addTapbackToLastUserMessage(tapback)
+    pushMessage({ type: 'agent', agentId: agent.id, text: replyText })
+  }
+
+  const addPersonaFromCommunity = () => {
+    const candidate = PERSONA_POOL.find(persona => !agents.some(agent => agent.id === persona.id))
+    if (!candidate) {
+      showToast('No more mock personas available.')
+      return null
+    }
+    setAgents(prev => [...prev, candidate])
+    showToast(`${candidate.name} joined the chat.`)
+    return candidate
+  }
+
+  const handleBirdAdmin = async (text) => {
+    const adminIntent = /(推荐|找.*persona|人格|拉|加入|踢|删除|移除|改名|名称|背景|昵称|头像|member|add|remove|rename)/i.test(text)
     if (!adminIntent) {
       await replyAsAgent(bird, 'I only handle admin tasks here. Ask me to find, add, remove, rename, or adjust the room.')
       return
     }
-
-    if (/(推荐|找|persona|人格)/.test(text)) {
+    if (/(推荐|找.*persona|人格)/i.test(text)) {
       const candidate = PERSONA_POOL.find(persona => !agents.some(agent => agent.id === persona.id))
-      await replyAsAgent(
-        bird,
-        candidate
-          ? `This room has emotion and logic covered, but it could use someone who slows things down and watches boundaries. I recommend ${candidate.name}.`
-          : 'All mock personas are already in this room.'
-      )
+      await replyAsAgent(bird, candidate ? `This room has its core voices, but it could use ${candidate.name}: ${candidate.role}.` : 'All mock personas are already in this room.')
       return
     }
-
-    if (/(拉|加)/.test(text)) {
+    if (/(拉|加入|add)/i.test(text)) {
       const added = addPersonaFromCommunity()
       await replyAsAgent(bird, added ? `Done. I added ${added.name}.` : 'No mock persona is available right now.')
       return
     }
-
-    if (/(踢|删|移除)/.test(text)) {
+    if (/(踢|删除|移除|remove)/i.test(text)) {
       const removed = agents[agents.length - 1]
       if (!removed) return
       setAgents(prev => prev.slice(0, -1))
@@ -408,14 +257,12 @@ function ChirpPage() {
       await replyAsAgent(bird, `Done. I removed ${removed.name}.`)
       return
     }
-
-    if (/(改名|名称)/.test(text)) {
+    if (/(改名|名称|rename)/i.test(text)) {
       setPlanet(prev => ({ ...prev, name: 'Soft Reset' }))
       await replyAsAgent(bird, 'Done. I renamed this Planet.')
       return
     }
-
-    if (/背景/.test(text)) {
+    if (/背景/i.test(text)) {
       setPlanet(prev => ({ ...prev, background: '#FFF8E7' }))
       await replyAsAgent(bird, 'Done. I warmed up the background.')
     }
@@ -426,17 +273,19 @@ function ChirpPage() {
     if (!text) return
 
     const mention = resolveMention(text)
+    const timestamp = Date.now()
     setInput('')
     setMentionOpen(false)
     setMentionQuery('')
     setMentionIndex(0)
+    rememberUserMessage(text, timestamp)
 
     if (!mention && !activeAgentId) {
-      pushMessage({ type: 'memo', text })
+      pushMessage({ type: 'memo', text, createdAt: timestamp })
       return
     }
 
-    const userMessage = { type: 'user', text, read: true }
+    const userMessage = { type: 'user', text, read: true, createdAt: timestamp }
     pushMessage(userMessage)
     const conversationWithUserMessage = [...messages, userMessage]
 
@@ -457,7 +306,6 @@ function ChirpPage() {
 
     const nextAgent = agents.find(agent => agent.id === mention) || agents.find(agent => agent.id === activeAgentId)
     if (!nextAgent) return
-
     setActiveAgentId(nextAgent.id)
     await replyAsAgent(nextAgent, null, conversationWithUserMessage)
   }
@@ -474,7 +322,7 @@ function ChirpPage() {
   const removeAgent = (agentId) => {
     const removed = agents.find(agent => agent.id === agentId)
     setAgents(prev => prev.filter(agent => agent.id !== agentId))
-    if (activeAgentId === agentId) setActiveAgentId(null)
+    if (activeAgentId === removed?.id) setActiveAgentId(null)
   }
 
   const openSettings = () => {
@@ -496,14 +344,10 @@ function ChirpPage() {
     <div className="chirp-page" style={{ '--chirp-paper': planet.background }}>
       <div className="chirp-shell">
         <header className="chirp-topbar">
-          <button className="chirp-back" aria-label="Back">
+          <button className="chirp-back" aria-label="Back" onClick={onBack}>
             <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
           </button>
-
-          <button className="chirp-group-title" onClick={openSettings}>
-            <span>{planet.name} ({memberCount})</span>
-          </button>
-
+          <button className="chirp-group-title" onClick={openSettings}><span>{planet.name} ({memberCount})</span></button>
           <button className="chirp-more" onClick={openSettings} aria-label="Group settings">
             <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
@@ -513,38 +357,14 @@ function ChirpPage() {
           <section className="chirp-chat">
             <div className="chirp-timeline" ref={timelineRef}>
               <div className="chirp-date">Today {formatMessageTime(new Date())}</div>
-
-              {messages.map(message => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  agents={agents}
-                  bird={bird}
-                />
-              ))}
-
-              {typingAgentId && (
-                <TypingBubble agent={[...agents, bird].find(agent => agent.id === typingAgentId)} />
-              )}
+              {messages.map(message => <MessageBubble key={message.id} message={message} agents={agents} bird={bird} />)}
+              {typingAgentId && <TypingBubble agent={[...agents, bird].find(agent => agent.id === typingAgentId)} />}
             </div>
 
             <footer className="chirp-composer">
               <div className="chirp-input-row">
-                <button
-                  className="chirp-upload-button"
-                  type="button"
-                  aria-label="Upload image"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  +
-                </button>
-                <input
-                  ref={fileInputRef}
-                  className="chirp-file-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUploadFile}
-                />
+                <button className="chirp-upload-button" type="button" aria-label="Upload image" onClick={() => fileInputRef.current?.click()}>+</button>
+                <input ref={fileInputRef} className="chirp-file-input" type="file" accept="image/*" onChange={handleUploadFile} />
                 <div className="chirp-input-shell">
                   <textarea
                     rows="1"
@@ -594,10 +414,7 @@ function ChirpPage() {
                         <span className="chirp-mention-avatar" style={{ backgroundColor: item.color }}>
                           {item.avatar ? <item.avatar /> : 'all'}
                         </span>
-                        <span>
-                          <strong>{item.label}</strong>
-                          <small>{item.role}</small>
-                        </span>
+                        <span><strong>{item.label}</strong><small>{item.role}</small></span>
                       </button>
                     ))}
                   </div>
@@ -606,35 +423,19 @@ function ChirpPage() {
             </footer>
           </section>
 
-          {settingsOpen && (
-            <button
-              className="chirp-settings-scrim"
-              type="button"
-              aria-label="Close settings"
-              onClick={closeSettings}
-            />
-          )}
+          {settingsOpen && <button className="chirp-settings-scrim" type="button" aria-label="Close settings" onClick={closeSettings} />}
 
           <aside className="chirp-settings">
             <div className="chirp-settings-head">
               <button onClick={closeSettings} aria-label="Close settings">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6 6 18" />
-                </svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
               </button>
             </div>
 
             <section className="chirp-room-profile">
               <div className="chirp-room-profile-inner">
-                <div className="chirp-room-avatar">
-                  <DeerAvatar />
-                </div>
-                <input
-                  className="chirp-room-name-input"
-                  value={settingsDraft.name}
-                  onChange={(event) => setSettingsDraft(prev => ({ ...prev, name: event.target.value }))}
-                  aria-label="Group name"
-                />
+                <div className="chirp-room-avatar"><RoomAvatar /></div>
+                <input className="chirp-room-name-input" value={settingsDraft.name} onChange={(event) => setSettingsDraft(prev => ({ ...prev, name: event.target.value }))} aria-label="Group name" />
               </div>
             </section>
 
@@ -644,29 +445,20 @@ function ChirpPage() {
                 <div className="chirp-members-grid">
                   {visibleMembers.map(member => (
                     <div className="chirp-member" key={member.id}>
-                      <div className="chirp-member-avatar" style={{ backgroundColor: member.color }}>
-                        <member.avatar />
-                      </div>
+                      <div className="chirp-member-avatar" style={{ backgroundColor: member.color }}><member.avatar /></div>
                       <span>{member.name}</span>
                     </div>
                   ))}
-                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label="Add member">
-                    <b>+</b>
-                  </button>
-                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label="Remove member">
-                    <b>-</b>
-                  </button>
+                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label="Add member"><b>+</b></button>
+                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label="Remove member"><b>-</b></button>
                 </div>
               </section>
 
               <section>
                 <h3>Admin</h3>
                 <div className="chirp-admin-card">
-                  <div className="chirp-admin-avatar"><BirdAvatar /></div>
-                  <div>
-                    <strong>Bird</strong>
-                    <p>Only replies when mentioned for admin tasks</p>
-                  </div>
+                  <div className="chirp-admin-avatar"><BIRD.avatar /></div>
+                  <div><strong>Bird</strong><p>Only replies when mentioned for admin tasks</p></div>
                 </div>
               </section>
 
@@ -676,10 +468,7 @@ function ChirpPage() {
                   {agents.map((agent, index) => (
                     <div className="chirp-agent-row" key={agent.id}>
                       <div className="chirp-agent-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
-                      <div>
-                        <strong>{index + 1}. {agent.name}</strong>
-                        <span>{agent.role}</span>
-                      </div>
+                      <div><strong>{index + 1}. {agent.name}</strong><span>{agent.role}</span></div>
                       <div className="chirp-agent-actions">
                         <button onClick={() => moveAgent(agent.id, -1)}>↑</button>
                         <button onClick={() => moveAgent(agent.id, 1)}>↓</button>
@@ -690,12 +479,9 @@ function ChirpPage() {
               </section>
             </div>
 
-            <div className="chirp-settings-footer">
-              <button type="button" onClick={saveSettings}>Save</button>
-            </div>
+            <div className="chirp-settings-footer"><button type="button" onClick={saveSettings}>Save</button></div>
           </aside>
         </main>
-
         {toast && <div className="chirp-toast">{toast}</div>}
       </div>
     </div>
@@ -703,72 +489,37 @@ function ChirpPage() {
 }
 
 function MessageBubble({ message, agents, bird }) {
-  if (message.type === 'system') {
-    return <div className="chirp-system-note">{message.text}</div>
-  }
-
-  if (message.type === 'memo') {
-    return (
-      <div className="chirp-message memo">
-        <div className="chirp-bubble">{message.text}</div>
-      </div>
-    )
-  }
-
+  if (message.type === 'system') return null
+  if (message.type === 'memo') return <div className="chirp-message memo"><div className="chirp-bubble">{message.text}</div></div>
   if (message.type === 'user') {
     return (
       <div className="chirp-message user">
         <div className="chirp-user-message-body">
           <div className="chirp-bubble">{message.text}</div>
-          {!!message.tapbacks?.length && (
-            <div className="chirp-user-tapbacks">
-              {message.tapbacks.map((tapback, index) => (
-                <span key={`${tapback}-${index}`}>{tapback}</span>
-              ))}
-            </div>
-          )}
+          {!!message.tapbacks?.length && <div className="chirp-user-tapbacks">{message.tapbacks.map((tapback, index) => <span key={`${tapback}-${index}`}>{tapback}</span>)}</div>}
           {message.read && <span className="chirp-read-receipt">{formatMessageTime(new Date(message.createdAt))} Read</span>}
         </div>
-        <div className="chirp-user-side-avatar">
-          <UserAvatar />
-        </div>
+        <div className="chirp-user-side-avatar"><UserAvatar /></div>
       </div>
     )
   }
 
   const agent = [...agents, bird].find(item => item.id === message.agentId)
   if (!agent) return null
-
   return (
     <div className="chirp-message agent">
       <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
-      <div className="chirp-agent-message-body">
-        <span className="chirp-agent-name">{agent.name}</span>
-        <div className="chirp-bubble">{message.text}</div>
-      </div>
+      <div className="chirp-agent-message-body"><span className="chirp-agent-name">{agent.name}</span><div className="chirp-bubble">{message.text}</div></div>
     </div>
-  )
-}
-
-function UserAvatar() {
-  return (
-    <span className="chirp-user-photo" aria-label="User avatar">
-      S
-    </span>
   )
 }
 
 function TypingBubble({ agent }) {
   if (!agent) return null
-
   return (
     <div className="chirp-message agent">
       <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
-      <div className="chirp-agent-message-body">
-        <div className="chirp-bubble typing">
-          <i></i><i></i><i></i>
-        </div>
-      </div>
+      <div className="chirp-agent-message-body"><div className="chirp-bubble typing"><i></i><i></i><i></i></div></div>
     </div>
   )
 }
