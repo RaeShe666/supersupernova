@@ -8,6 +8,24 @@ export const formatMessageTime = (date = new Date()) => (
   }).format(date)
 )
 
+export const formatActivityTime = (timestamp, fallback = '') => {
+  if (!timestamp) return fallback
+
+  const date = new Date(timestamp)
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000
+  const value = date.getTime()
+
+  if (value >= startOfToday) return formatMessageTime(date)
+  if (value >= startOfYesterday) return 'Yesterday'
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric'
+  }).format(date)
+}
+
 export const truncateRecentMessage = (text = '', limit = 25) => {
   const clean = String(text).replace(/\s+/g, ' ').trim()
   if (!clean) return ''
@@ -20,6 +38,19 @@ export const truncateRecentMessage = (text = '', limit = 25) => {
   const words = clean.split(' ')
   return words.length > limit ? `${words.slice(0, limit).join(' ')}...` : clean
 }
+
+export const truncateWords = (text = '', limit = 6) => {
+  const clean = String(text).replace(/\s+/g, ' ').trim()
+  if (!clean) return ''
+
+  const hasCjk = /[\u3400-\u9FFF]/.test(clean)
+  if (hasCjk) return clean.length > limit ? `${clean.slice(0, limit)}...` : clean
+
+  const words = clean.split(' ')
+  return words.length > limit ? `${words.slice(0, limit).join(' ')}...` : clean
+}
+
+export const truncateTitle = (text = '', limit = 4) => truncateWords(text, limit)
 
 export const readPlanetActivity = () => {
   if (typeof window === 'undefined') return {}
@@ -39,7 +70,7 @@ export const writePlanetActivity = (planetId, message, timestamp = Date.now()) =
       text: truncateRecentMessage(message, 25),
       rawText: message,
       timestamp,
-      time: formatMessageTime(new Date(timestamp))
+      time: formatActivityTime(timestamp)
     }
   }
 
@@ -49,7 +80,12 @@ export const writePlanetActivity = (planetId, message, timestamp = Date.now()) =
 
 export const getPlanetRecent = (planet) => {
   const activity = readPlanetActivity()[planet.id]
-  if (activity?.text) return activity
+  if (activity?.text) {
+    return {
+      ...activity,
+      time: formatActivityTime(activity.timestamp, activity.time)
+    }
+  }
   return {
     text: truncateRecentMessage(planet.recent, 25),
     rawText: planet.recent,

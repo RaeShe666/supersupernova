@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import ChirpPage from './ChirpPage'
-import { BIRD, CHIRP_PLANETS, getPlanetById, getPlanetRecent, readPlanetActivity } from './chirpShared'
+import {
+  BIRD,
+  CHIRP_PLANETS,
+  getPlanetById,
+  getPlanetRecent,
+  readPlanetActivity,
+  truncateTitle,
+  truncateWords
+} from './chirpShared'
 import './ChirpHomePage.css'
 
 const navigateTo = (...segments) => {
@@ -197,10 +205,16 @@ function DrawerPlanetCard({ planet, onClick, recent }) {
 
   return (
     <button className={`planet-card drawer-planet-card ${className}`} type="button" onClick={onClick}>
-      <div className="pc-avatar"><Art /></div>
-      <div className="pc-name">{getCardTitle(planet)}</div>
-      <div className="pc-quote">{recent.text}</div>
-      <time className="pc-time">{recent.time}</time>
+      <div className="drawer-planet-main">
+        <div className="pc-avatar"><Art /></div>
+        <div className="drawer-planet-copy">
+          <div className="drawer-planet-row">
+            <div className="pc-name">{truncateTitle(getCardTitle(planet), 4)}</div>
+            <time className="pc-time">{recent.time}</time>
+          </div>
+          <div className="pc-quote">{truncateWords(recent.rawText || recent.text, 6)}</div>
+        </div>
+      </div>
     </button>
   )
 }
@@ -224,7 +238,7 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor }) {
           </div>
         ) : (
           <div className="chirp-home-drawer-planets">
-            <button className="planet-card pc-create drawer-planet-card" type="button">
+            <button className="planet-card pc-create drawer-planet-card drawer-create-card" type="button">
               <div className="pc-create-illu"><CreatePlanetIcon /></div>
               <div className="pc-create-title">My Planet</div>
               <div className="pc-create-desc">Name it. Color it. Make it yours.</div>

@@ -912,27 +912,91 @@
 .chirp-home-drawer-planets {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .chirp-home-drawer .drawer-planet-card {
   width: 100%;
   min-width: 0;
   max-width: none;
-  min-height: 154px;
+  min-height: 74px;
   flex: 0 0 auto;
-  padding: 18px 16px;
+  padding: 12px 14px;
+  display: block;
+  text-align: left;
+  border-radius: 18px;
+  gap: 0;
 }
 
 .chirp-home-drawer .drawer-planet-card .pc-avatar,
 .chirp-home-drawer .drawer-planet-card .pc-create-illu {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border-radius: 50%;
 }
 
 .chirp-home-drawer .drawer-planet-card .pc-create-illu svg {
   width: 34px;
   height: 34px;
+}
+
+.chirp-home-drawer .drawer-planet-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.chirp-home-drawer .drawer-planet-copy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.chirp-home-drawer .drawer-planet-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chirp-home-drawer .drawer-planet-card .pc-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.1px;
+}
+
+.chirp-home-drawer .drawer-planet-card .pc-time {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 12px;
+  color: rgba(42, 42, 42, 0.5);
+}
+
+.chirp-home-drawer .drawer-planet-card .pc-quote {
+  display: block;
+  max-width: 100%;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: rgba(42, 42, 42, 0.66);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chirp-home-drawer .drawer-create-card {
+  min-height: 118px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  padding: 18px 14px;
 }
 
 @media (max-width: 500px) {
