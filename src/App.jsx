@@ -5,7 +5,6 @@ import HomePage from './pages/HomePage'
 import EditorPage from './pages/EditorPage'
 import LoginPage from './pages/LoginPage'
 import { extractBrandKit } from './services/aiService'
-import StarField from './components/StarField'
 import './App.css'
 
 const parseRoute = () => {
@@ -351,12 +350,10 @@ function AppContent() {
       <div className="landing-page">
         <div className="landing-text">
           <Typewriter lines={[
-            'Something is made here.',
-            'Smart as the builder, you know what it is.',
-            'Leave a trace, or click above.'
+            'Something is changing here.',
+            'The builder is lazy, leaving nothing here.'
           ]} />
         </div>
-        <StarField />
       </div>
     )
   }
