@@ -192,10 +192,19 @@ function ChirpPage() {
   }
 
   const replyAsAgent = async (agent, overrideText, conversationOverride = null) => {
-    const fallbackText = overrideText || agent.reply
     const deepseekReply = overrideText ? null : await requestAgentReply(agent, conversationOverride || messages)
-    const replyText = deepseekReply?.text || fallbackText
-    const tapback = deepseekReply?.emoji || agent.emoji
+    const replyText = overrideText || deepseekReply?.text
+
+    if (!replyText) {
+      showToast('AI 连接失败，请稍后再试。')
+      pushMessage({
+        type: 'system',
+        text: `${agent.name} 暂时没有连上 AI。`
+      })
+      return
+    }
+
+    const tapback = deepseekReply?.emoji || (overrideText ? agent.emoji : null)
 
     setTypingAgentId(agent.id)
     await sleep(650 + Math.min(replyText.length * 18, 900))
@@ -252,7 +261,7 @@ function ChirpPage() {
       if (!result?.success) return null
       return result.reply
     } catch (error) {
-      console.warn('Chirp DeepSeek reply failed, using local fallback:', error)
+      console.warn('Chirp DeepSeek reply failed:', error)
       return null
     }
   }
