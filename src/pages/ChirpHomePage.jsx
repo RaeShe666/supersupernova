@@ -6,6 +6,7 @@ import {
   BIRD,
   buildPersonaTheme,
   CHIRP_PLANETS,
+  formatActivityTime,
   getAllPlanets,
   getAllPersonas,
   getPlanetById,
@@ -19,10 +20,12 @@ import {
 import {
   loadChirpPlanets,
   loadChirpProfile,
+  loadChirpMomentEntries,
   loadCustomPersonas,
   loadPlanetActivityFromMessages,
   loadPlanetMemberPersonas,
   saveChirpProfile,
+  saveChirpMomentEntry,
   saveCustomPersonaToSupabase,
   savePlanetMemberPersonas,
   uploadPersonaAvatar
@@ -100,7 +103,7 @@ const planetArt = {
   work: WorkFox
 }
 
-const getCardTitle = (planet) => (planet.id === 'work' ? 'My Odyssey' : 'Crush with...')
+const getCardTitle = (planet) => (planet.id === 'work' ? 'the suck odessy' : 'my crush...')
 const getPlanetCardTitle = (planet) => planet.cardTitle || getCardTitle(planet)
 const DRAWER_MIN_WIDTH = 260
 const DRAWER_DEFAULT_WIDTH = 300
@@ -448,9 +451,7 @@ function ChirpHomePage({ page, id }) {
   if (page === 'moments') {
     return (
       <div className="chirp-home-page">
-        <main className="chirp-about-placeholder">
-          <div className="sec-label">Moments</div>
-        </main>
+        <MomentsPage user={user} planets={planets} />
         {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
       </div>
     )
@@ -465,7 +466,7 @@ function ChirpHomePage({ page, id }) {
             <div className="bird-text">
               <div className="bird-name">{chirpProfile?.birdName || 'Bird'} · 07:42</div>
               <div className="bird-msg">
-                Morning, Goldie — last night in <em role="button" tabIndex="0" onClick={() => navigateTo('chirp', 'planet', 'love')} onKeyDown={(event) => event.key === 'Enter' && navigateTo('chirp', 'planet', 'love')}>Crush with...</em> you wrote "never mind, let it go." That softness shows up a lot this week.
+                Morning, Goldie — last night in <em role="button" tabIndex="0" onClick={() => navigateTo('chirp', 'planet', 'love')} onKeyDown={(event) => event.key === 'Enter' && navigateTo('chirp', 'planet', 'love')}>my crush...</em> you wrote "never mind, let it go." That softness shows up a lot this week.
               </div>
             </div>
             <button className="chirp-test-button" type="button" onClick={() => setOnboardingOpen(true)}>Chat</button>
@@ -534,7 +535,6 @@ function AboutMePage({ chirpProfile, planets }) {
             <OnboardingAnimalAvatar animal={animalKey} />
           </div>
           <div className="about-profile-copy">
-            <div className="sec-label">About Me</div>
             <h1>{animal.name}</h1>
             <div className="about-profile-traits">{animal.trait}</div>
           </div>
@@ -588,6 +588,392 @@ function AboutMePage({ chirpProfile, planets }) {
                 </button>
               )
             })}
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+const buildMomentMonth = (days, marked) => Array.from({ length: days }, (_, index) => marked[index + 1] || 'none')
+const MOMENTS_CAL_DATA = {
+  may: buildMomentMonth(31, { 10: 'blue', 12: 'duo', 13: 'gold', 14: 'duo' }),
+  apr: buildMomentMonth(30, { 3: 'blue', 8: 'duo', 15: 'gold', 24: 'blue' }),
+  mar: buildMomentMonth(31, { 18: 'gold', 19: 'duo', 21: 'blue' })
+}
+
+const MOMENTS_DATE_TARGETS = {
+  may: { 14: 'today', 13: 'yesterday', 12: 'may-12', 10: 'may-10' },
+  apr: { 3: 'apr-3', 8: 'apr-8', 15: 'apr-15', 24: 'apr-24' },
+  mar: { 18: 'mar-18', 19: 'mar-19', 21: 'mar-21' }
+}
+
+const MOMENTS_PAPER_COLORS = ['#FAFAF7', '#FFF8E7', '#F0F4E8', '#E8F0F5', '#FBE6EA', '#EFEAF8', '#FFFFFF']
+const MOMENTS_PAPER_PATTERNS = [
+  { id: '', name: 'Plain', preview: 'blank-p' },
+  { id: 'pattern-grid', name: 'Grid', preview: 'grid-p' },
+  { id: 'pattern-lined', name: 'Lined', preview: 'lined-p' },
+  { id: 'pattern-dot', name: 'Dotted', preview: 'dot-p' }
+]
+
+const MOMENT_SPACES = [
+  {
+    id: 'xw',
+    backingId: 'love',
+    className: 'love',
+    title: 'X & W',
+    subtitle: 'SHARED'
+  },
+  {
+    id: 'inner-child',
+    backingId: 'work',
+    className: 'work',
+    title: 'the inner child',
+    subtitle: 'PRIVATE'
+  }
+]
+
+const MOMENT_SAMPLE_ENTRIES = {
+  xw: [
+    { id: 'sample-xw-1', dateKey: 'today', dateLabel: 'Today', time: '15 : 08 · W', tone: 'fr', text: '中午那个汤！！好喝到原地升天，下次一起去', image: 'soup', imageText: '🍲 那家小店' },
+    { id: 'sample-xw-2', dateKey: 'today', dateLabel: 'Today', time: '14 : 22 · X', tone: 'me', text: '路过咖啡店，门口的猫又在晒太阳。跟你说过的那只。', image: 'cat', imageText: '🐱 cat in the sun' },
+    { id: 'sample-xw-3', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '10 : 30 · W', tone: 'fr', text: '早上阳光洒进来，突然很想发条消息给你。又忍住了。' },
+    { id: 'sample-xw-4', dateKey: 'may-12', dateLabel: 'May 12', time: '09 : 15 · X', tone: 'me', text: '今天天气好得不真实' },
+    { id: 'sample-xw-5', dateKey: 'may-10', dateLabel: 'May 10', time: '18 : 45 · W', tone: 'fr', text: '公园里有人在放风筝。线断了，风筝越飞越远。莫名觉得自由。' }
+  ],
+  'inner-child': [
+    { id: 'sample-inner-1', dateKey: 'today', dateLabel: 'Today', time: '16 : 12 · S', tone: 'me', text: '刚刚买到最后一只草莓面包，像被今天偷偷偏爱了一下。' },
+    { id: 'sample-inner-2', dateKey: 'today', dateLabel: 'Today', time: '13 : 27 · S', tone: 'me', text: '灵机一现：下次写东西可以先写标题，别急着证明自己很完整。' },
+    { id: 'sample-inner-3', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '09 : 48 · S', tone: 'me', text: '碎碎念：今天的云像被揉皱的纸巾，但看着很安心。' },
+    { id: 'sample-inner-4', dateKey: 'may-12', dateLabel: 'May 12', time: '12 : 15 · S', tone: 'me', text: '午饭吃了碗特别好吃的牛肉面。幸福就是这么简单。' },
+    { id: 'sample-inner-5', dateKey: 'may-10', dateLabel: 'May 10', time: '21 : 08 · S', tone: 'me', text: '看完动画片莫名想哭。是被那种“很简单的好”打到了。' }
+  ]
+}
+
+const MOMENTS_BIRD_PROMPT = {
+  id: 'bird-inner-child-prompt',
+  dateKey: 'today',
+  dateLabel: 'Today',
+  time: '小草 · now',
+  tone: 'bird',
+  text: '我会在这里陪你把零散的感受慢慢写清楚。你不用组织好再说，我会先问很简单的问题：你今天心情如何？'
+}
+
+const readLocalMomentEntries = (planetId) => {
+  if (typeof window === 'undefined') return []
+  try {
+    return JSON.parse(window.localStorage.getItem(`chirpMoments:${planetId}`) || '[]')
+  } catch {
+    return []
+  }
+}
+
+const saveLocalMomentEntries = (planetId, entries) => {
+  window.localStorage.setItem(`chirpMoments:${planetId}`, JSON.stringify(entries))
+}
+
+const MomentsPaperclipIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16.5 6.6 C16.1 6.2 15.4 6.1 14.9 6.5 C14.6 6.7 14.4 7 14.1 7.3 L8.3 13.2 C7.6 13.9 7.4 14.7 8 15.2 C8.6 15.7 9.4 15.4 10 14.8 L14.7 10 C14.9 9.8 15 9.6 15.2 9.5" />
+    <path d="M17.6 5.5 C16.5 4.5 14.8 4.4 13.7 5.5 L7.2 12 C5.4 13.8 5.3 16.7 7 18.4 C8.7 20.1 11.5 20 13.4 18.2 L18.7 12.9 C18.9 12.6 19.2 12.4 19.4 12.1" />
+  </svg>
+)
+
+const MomentsMicIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3.3 C10.4 3.2 9.5 4.2 9.5 5.6 C9.5 7.4 9.5 9.3 9.5 11 C9.4 12.6 10.6 13.6 12.1 13.5 C13.6 13.4 14.5 12.4 14.5 11 C14.5 9.2 14.5 7.2 14.5 5.6 C14.5 4.1 13.6 3.2 12 3.3 Z" />
+    <path d="M6.6 11 C6.4 14.7 9.3 16.6 12 16.5 C15.1 16.4 17.6 14.5 17.5 11.2" />
+    <path d="M12 16.5 C12 17.7 12 18.7 12 20" />
+    <path d="M8.8 20.1 C10.7 20 13.2 20 15.3 20" />
+  </svg>
+)
+
+function MomentsCalendarDay({ kind, day, today, onOpen }) {
+  const hasEntry = kind !== 'none'
+  return (
+    <button className={`moments-dd ${hasEntry ? 'has' : ''} ${today ? 'today-ring' : ''}`} type="button" onClick={hasEntry ? onOpen : undefined}>
+      {kind === 'gold' && <span className="moments-ex-av gold">S</span>}
+      {kind === 'blue' && <span className="moments-ex-av blue">X</span>}
+      {kind === 'duo' && (
+        <span className="moments-ex-duo">
+          <span className="moments-ex-av small gold">S</span>
+          <span className="moments-ex-av small blue">X</span>
+        </span>
+      )}
+      {kind === 'none' && <span className="moments-dd-dot" />}
+    </button>
+  )
+}
+
+function MomentsPage({ user, planets }) {
+  const [aiMode, setAiMode] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [bgPickerOpen, setBgPickerOpen] = useState(false)
+  const [paperColor, setPaperColor] = useState('#FAFAF7')
+  const [paperPattern, setPaperPattern] = useState('')
+  const [activeMomentId, setActiveMomentId] = useState('xw')
+  const [momentEntries, setMomentEntries] = useState([])
+  const [draftText, setDraftText] = useState('')
+  const [composerActive, setComposerActive] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedAt, setSavedAt] = useState(null)
+  const [draftEntryId, setDraftEntryId] = useState(null)
+
+  const activeMoment = useMemo(() => {
+    return MOMENT_SPACES.find(space => space.id === activeMomentId) || MOMENT_SPACES[0]
+  }, [activeMomentId])
+
+  const backingPlanet = useMemo(() => {
+    return planets.find(planet => planet.id === activeMoment.backingId) || getPlanetById(activeMoment.backingId) || planets[0]
+  }, [activeMoment, planets])
+
+  useEffect(() => {
+    let cancelled = false
+    const loadEntries = async () => {
+      const localEntries = readLocalMomentEntries(activeMomentId)
+      if (!user || !backingPlanet?.dbId) {
+        setMomentEntries(localEntries)
+        setDraftText('')
+        setDraftEntryId(null)
+        return
+      }
+      try {
+        const remoteEntries = await loadChirpMomentEntries(backingPlanet)
+        const entries = remoteEntries?.length ? remoteEntries : localEntries
+        if (!cancelled) {
+          setMomentEntries(entries)
+          setDraftText('')
+          setDraftEntryId(null)
+        }
+      } catch (error) {
+        console.warn('Failed to load Moments entries:', error)
+        if (!cancelled) {
+          setMomentEntries(localEntries)
+          setDraftText('')
+          setDraftEntryId(null)
+        }
+      }
+    }
+
+    loadEntries()
+    return () => {
+      cancelled = true
+    }
+  }, [activeMomentId, backingPlanet, user])
+
+  const saveMomentDraft = async (textOverride = draftText) => {
+    const text = textOverride.trim()
+    if (!text || saving) return
+    setSaving(true)
+    const localEntry = { id: draftEntryId || `local-${Date.now()}`, text, createdAt: Date.now() }
+    try {
+      let nextEntry = localEntry
+      if (user && backingPlanet?.dbId) {
+        nextEntry = await saveChirpMomentEntry(backingPlanet, text, draftEntryId)
+      }
+      const restEntries = momentEntries.filter(entry => entry.id !== draftEntryId && entry.id !== nextEntry.id)
+      const nextEntries = [nextEntry, ...restEntries]
+      setMomentEntries(nextEntries)
+      setDraftEntryId(nextEntry.id)
+      saveLocalMomentEntries(activeMomentId, nextEntries)
+      setSavedAt(Date.now())
+      window.dispatchEvent(new CustomEvent('chirp:planet-activity'))
+    } catch (error) {
+      console.warn('Failed to save Moment entry:', error)
+      const restEntries = momentEntries.filter(entry => entry.id !== draftEntryId && entry.id !== localEntry.id)
+      const nextEntries = [localEntry, ...restEntries]
+      setMomentEntries(nextEntries)
+      setDraftEntryId(localEntry.id)
+      saveLocalMomentEntries(activeMomentId, nextEntries)
+      setSavedAt(Date.now())
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  useEffect(() => {
+    const text = draftText.trim()
+    if (!text) return undefined
+    const timer = window.setTimeout(() => saveMomentDraft(text), 900)
+    return () => window.clearTimeout(timer)
+  }, [draftText])
+
+  useEffect(() => {
+    if (activeMomentId !== 'inner-child' && aiMode) setAiMode(false)
+  }, [activeMomentId, aiMode])
+
+  const jumpToMomentDate = (month, day) => {
+    const target = MOMENTS_DATE_TARGETS[month]?.[day] || 'today'
+    setCalendarOpen(false)
+    window.setTimeout(() => {
+      document.getElementById(`moment-date-${target}`)?.scrollIntoView({ block: 'start' })
+    }, 0)
+  }
+
+  const renderMonth = (month, label, todayDay) => {
+    const days = MOMENTS_CAL_DATA[month]
+    const count = days.filter(kind => kind !== 'none').length
+    return (
+      <section className="moments-cal-month">
+        <div className="moments-cal-month-label">{label} <span className="moments-cal-month-count">· {count} days</span></div>
+        <div className="moments-cal-days">
+          {days.map((kind, index) => (
+            <MomentsCalendarDay key={`${month}-${index}`} kind={kind} day={index + 1} today={todayDay === index + 1} onOpen={() => jumpToMomentDate(month, index + 1)} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  const sampleSections = useMemo(() => {
+    const sections = []
+    const entries = aiMode && activeMomentId === 'inner-child'
+      ? [MOMENTS_BIRD_PROMPT, ...(MOMENT_SAMPLE_ENTRIES[activeMomentId] || [])]
+      : (MOMENT_SAMPLE_ENTRIES[activeMomentId] || [])
+    ;entries.forEach(entry => {
+      let section = sections.find(item => item.key === entry.dateKey)
+      if (!section) {
+        section = { key: entry.dateKey, label: entry.dateLabel, entries: [] }
+        sections.push(section)
+      }
+      section.entries.push(entry)
+    })
+    return sections
+  }, [activeMomentId])
+
+  return (
+    <main className="chirp-moments-page">
+      <section className="moments-topic-row">
+        {MOMENT_SPACES.map(space => (
+          <button className={`moments-topic ${space.className} ${activeMomentId === space.id ? 'active' : ''}`} type="button" key={space.id} onClick={() => setActiveMomentId(space.id)}>
+            <span className="moments-topic-info">
+              <span className="moments-topic-name">{space.title}</span>
+              <span className="moments-topic-sub">{space.subtitle}</span>
+            </span>
+          </button>
+        ))}
+        <button className="moments-topic create" type="button">
+          <span className="moments-topic-plus">+</span>
+          <span className="moments-topic-info">
+            <span className="moments-topic-name">Create a moment</span>
+          </span>
+        </button>
+      </section>
+
+      <section className="moments-memo-frame" style={{ backgroundColor: paperColor }}>
+        <div className="moments-memo-toolbar">
+          <div className="moments-m-left">
+            <button className="moments-m-dots" type="button" title="Records panel" onClick={() => { setBgPickerOpen(false); setCalendarOpen(true) }}>
+              <span className="moments-md both" />
+              <span className="moments-md me" />
+              <span className="moments-md fr" />
+              <span className="moments-md both" />
+              <span className="moments-m-dots-arrow">▾</span>
+            </button>
+          </div>
+
+          <div className="moments-m-center">
+            <button className="moments-m-tool" type="button" title="Attach"><MomentsPaperclipIcon /></button>
+            <button className="moments-m-tool" type="button" title="Voice"><MomentsMicIcon /></button>
+            {activeMomentId === 'inner-child' && (
+              <button className={`moments-m-aimode ${aiMode ? 'on' : ''}`} type="button" onClick={() => setAiMode(prev => !prev)}>
+                <span>AI Mode</span>
+                <span className="moments-ai-switch" />
+              </button>
+            )}
+          </div>
+
+          <div className="moments-m-right">
+            <button className={`moments-m-more ${bgPickerOpen ? 'on' : ''}`} type="button" title="More" onClick={() => setBgPickerOpen(prev => !prev)}>
+              <span className="moments-m-more-dot" />
+              <span className="moments-m-more-dot" />
+              <span className="moments-m-more-dot" />
+            </button>
+          </div>
+        </div>
+
+        <div className={`moments-memo-scroll ${paperPattern}`} onClick={() => setComposerActive(true)}>
+          <div className="moments-memo-doc">
+            {sampleSections.map(section => (
+              <section className="moments-date-group" id={`moment-date-${section.key}`} key={section.key}>
+                <div className="moments-date-section">{section.label}</div>
+                {section.key === 'today' && momentEntries.map(entry => (
+                  <div className="moments-entry" key={entry.id}>
+                    <div className="moments-entry-time">{formatActivityTime(entry.createdAt)} · S</div>
+                    <div className="moments-entry-text me" lang={/[\u4e00-\u9fff]/.test(entry.text) ? 'zh' : 'en'}>{entry.text}</div>
+                  </div>
+                ))}
+                {section.entries.map(entry => (
+                  <div className="moments-entry" key={entry.id}>
+                    <div className="moments-entry-time">{entry.time}</div>
+                    <div className={`moments-entry-text ${entry.tone}`} lang="zh">{entry.text}</div>
+                    {entry.image && (
+                      <div className="moments-entry-img">
+                        <div className={`moments-entry-img-inner ${entry.image}`}>{entry.imageText}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </section>
+            ))}
+
+            {composerActive && (
+              <div className="moments-composer">
+                <textarea
+                  value={draftText}
+                  onChange={(event) => {
+                    setDraftText(event.target.value)
+                    setComposerActive(true)
+                  }}
+                  autoFocus
+                  placeholder="Write a moment..."
+                  rows="2"
+                />
+                <div className="moments-save-state">{saving ? 'Saving' : ''}</div>
+              </div>
+            )}
+            {!composerActive && <div className="moments-paper-cursor"><div className="moments-paper-cursor-line" /></div>}
+          </div>
+        </div>
+
+        <div className={`moments-overlay ${calendarOpen ? 'on' : ''}`} style={{ backgroundColor: paperColor }}>
+          <div className="moments-overlay-inner">
+            <div className="moments-overlay-head">
+              <div className="moments-overlay-title">All Entries</div>
+              <button className="moments-ov-close" type="button" onClick={() => setCalendarOpen(false)}>✕</button>
+            </div>
+            <div className="moments-cal-legend">
+              <span><i className="gold" />S</span>
+              <span><i className="blue" />X</span>
+              <span><i className="both" />Both</span>
+              <span><i className="empty" />Empty</span>
+            </div>
+            {renderMonth('may', 'May 2026', 14)}
+            {renderMonth('apr', 'April 2026')}
+            {renderMonth('mar', 'March 2026')}
+          </div>
+        </div>
+
+        <div className={`moments-bg-picker ${bgPickerOpen ? 'on' : ''}`} style={{ backgroundColor: paperColor }}>
+          <div className="moments-bg-picker-title">Paper</div>
+          <div className="moments-bg-picker-section">
+            <div className="moments-bg-picker-label">Color</div>
+            <div className="moments-bg-colors">
+              {MOMENTS_PAPER_COLORS.map(color => (
+                <button className={`moments-bg-color ${paperColor === color ? 'on' : ''}`} type="button" key={color} style={{ backgroundColor: color }} onClick={() => setPaperColor(color)} aria-label={`Use paper color ${color}`} />
+              ))}
+            </div>
+          </div>
+          <div className="moments-bg-picker-section">
+            <div className="moments-bg-picker-label">Pattern</div>
+            <div className="moments-bg-patterns">
+              {MOMENTS_PAPER_PATTERNS.map(pattern => (
+                <button className={`moments-bg-pat ${paperPattern === pattern.id ? 'on' : ''}`} type="button" key={pattern.name} onClick={() => setPaperPattern(pattern.id)}>
+                  <span className={`moments-bg-pat-preview ${pattern.preview}`} />
+                  <span className="moments-bg-pat-name">{pattern.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -1033,8 +1419,15 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
             >
               <span>◎</span><strong>Persona</strong>
             </button>
-            <button type="button"><span>✎</span><strong>Moments</strong></button>
-            <button type="button"><span>✦</span><strong>About Me</strong></button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                navigateTo('chirp', 'moments')
+              }}
+            >
+              <span>✎</span><strong>Moments</strong>
+            </button>
           </div>
         ) : (
           <div className="chirp-home-drawer-planets">
@@ -1068,4 +1461,6 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
 }
 
 export default ChirpHomePage
+
+
 

@@ -185,6 +185,68 @@ export async function saveChirpMessage(planet, message) {
   return data
 }
 
+export async function loadChirpMomentEntries(planet) {
+  if (!planet?.dbId) return null
+
+  const { data, error } = await supabase
+    .from('chirp_messages')
+    .select('*')
+    .eq('planet_id', planet.dbId)
+    .eq('sender_type', 'memo')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data || []).map(row => ({
+    id: row.id,
+    text: row.text || '',
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+  }))
+}
+
+export async function saveChirpMomentEntry(planet, text, entryId) {
+  if (!planet?.dbId || !text?.trim()) return null
+
+  if (entryId && !String(entryId).startsWith('local-')) {
+    const { data, error } = await supabase
+      .from('chirp_messages')
+      .update({
+        text: text.trim()
+      })
+      .eq('id', entryId)
+      .eq('planet_id', planet.dbId)
+      .eq('sender_type', 'memo')
+      .select()
+      .single()
+
+    if (error) throw error
+    return {
+      id: data.id,
+      text: data.text || '',
+      createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('chirp_messages')
+    .insert({
+      planet_id: planet.dbId,
+      sender_type: 'memo',
+      sender_id: 'user',
+      text: text.trim(),
+      tapbacks: []
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return {
+    id: data.id,
+    text: data.text || '',
+    createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+  }
+}
+
 export async function loadPlanetActivityFromMessages(planets) {
   const dbIds = planets.map(planet => planet.dbId).filter(Boolean)
   if (!dbIds.length) return {}
