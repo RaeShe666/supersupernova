@@ -291,7 +291,8 @@ function AppContent() {
   }
 
   const isWaitingForEditorProject = currentSection === 'brandkit' && currentPage === 'editor' && !currentProject && initialEditorProjectId.current
-  if (loading || dataLoading || isWaitingForEditorProject) {
+  const isPublicSection = currentSection === 'landing' || currentSection === 'chirp'
+  if (!isPublicSection && (loading || dataLoading || isWaitingForEditorProject)) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
@@ -363,7 +364,7 @@ function AppContent() {
       {/* Global Top Nav */}
       <nav className="global-nav">
         <a className="global-nav-brand" onClick={() => navigateTo()}>
-          <img src="/logo-home1.png" alt="Logo" className="global-nav-logo" />
+          <img src="/logo-home-transparent.png" alt="Logo" className="global-nav-logo" />
           SYL.AILABS
         </a>
 
