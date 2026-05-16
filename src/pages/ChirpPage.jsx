@@ -120,6 +120,7 @@ const INITIAL_MESSAGES = [
     id: 'm3',
     type: 'user',
     text: '@恋爱脑 这是不是有点冷掉了？',
+    read: true,
     tapbacks: ['‼️']
   },
   {
@@ -136,9 +137,7 @@ function ChirpPage() {
   const [agents, setAgents] = useState(PERSONA_POOL.slice(0, 2))
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
-  const [pendingMention, setPendingMention] = useState(null)
   const [activeAgentId, setActiveAgentId] = useState('lovebrain')
-  const [mentionOpen, setMentionOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [typingAgentId, setTypingAgentId] = useState(null)
   const [toast, setToast] = useState('')
@@ -152,9 +151,7 @@ function ChirpPage() {
     avatar: BirdAvatar
   }), [])
 
-  const activeAgent = agents.find(agent => agent.id === activeAgentId)
   const visibleMembers = [{ id: 'user', name: userProfile.nickname, color: '#F5C878', avatar: UserAvatar }, bird, ...agents]
-  const mentionItems = [{ id: 'all', name: '@all', role: '按顺序串行回复' }, ...agents, bird]
 
   const pushMessage = (message) => {
     setMessages(prev => [...prev, { id: `${Date.now()}-${Math.random()}`, ...message }])
@@ -184,7 +181,6 @@ function ChirpPage() {
   }
 
   const resolveMention = (text) => {
-    if (pendingMention) return pendingMention
     if (/^@all\b/i.test(text)) return 'all'
     if (/^@bird\b/i.test(text) || /^@小鸟\b/.test(text)) return 'bird'
     const mentionedAgent = agents.find(agent => text.startsWith(`@${agent.name}`))
@@ -192,10 +188,28 @@ function ChirpPage() {
   }
 
   const replyAsAgent = async (agent, overrideText, conversationOverride = null) => {
+    let typingVisible = false
+    const typingTimer = overrideText
+      ? null
+      : window.setTimeout(() => {
+        typingVisible = true
+        setTypingAgentId(agent.id)
+      }, 2000)
+
     const deepseekReply = overrideText ? null : await requestAgentReply(agent, conversationOverride || messages)
+    if (typingTimer) window.clearTimeout(typingTimer)
+
     const replyText = overrideText || deepseekReply?.text
+    const tapback = deepseekReply?.emoji || null
+
+    if (!replyText && tapback) {
+      setTypingAgentId(null)
+      addTapbackToLastUserMessage(tapback)
+      return
+    }
 
     if (!replyText) {
+      setTypingAgentId(null)
       showToast('AI 连接失败，请稍后再试。')
       pushMessage({
         type: 'system',
@@ -204,10 +218,10 @@ function ChirpPage() {
       return
     }
 
-    const tapback = deepseekReply?.emoji || (overrideText ? agent.emoji : null)
+    if (typingVisible) {
+      await sleep(380)
+    }
 
-    setTypingAgentId(agent.id)
-    await sleep(650 + Math.min(replyText.length * 18, 900))
     setTypingAgentId(null)
     addTapbackToLastUserMessage(tapback)
     pushMessage({
@@ -319,15 +333,13 @@ function ChirpPage() {
 
     const mention = resolveMention(text)
     setInput('')
-    setPendingMention(null)
-    setMentionOpen(false)
 
     if (!mention && !activeAgentId) {
       pushMessage({ type: 'memo', text })
       return
     }
 
-    const userMessage = { type: 'user', text }
+    const userMessage = { type: 'user', text, read: true }
     pushMessage(userMessage)
     const conversationWithUserMessage = [...messages, userMessage]
 
@@ -376,17 +388,8 @@ function ChirpPage() {
     if (removed) pushMessage({ type: 'system', text: `${removed.name} 已离开 ${planet.name}` })
   }
 
-  const pickMention = (id) => {
-    setPendingMention(id)
-    setMentionOpen(false)
-  }
-
   const updatePlanetName = (value) => {
     setPlanet(prev => ({ ...prev, name: value || '未命名 Planet' }))
-  }
-
-  const updateBackground = (value) => {
-    setPlanet(prev => ({ ...prev, background: value }))
   }
 
   return (
@@ -434,34 +437,8 @@ function ChirpPage() {
             </div>
 
             <footer className="chirp-composer">
-              <div className="chirp-active-line">
-                {activeAgent && <span>{activeAgent.name} 正在开麦</span>}
-                <em>{activeAgent ? '继续发送会默认由 TA 回复；@ 其他人会切换发言权。' : '不 @ 任何人时，这条会作为 Planet 记录保存。'}</em>
-              </div>
-
               <div className="chirp-input-row">
-                <button className="chirp-at-button" onClick={() => setMentionOpen(open => !open)}>@</button>
-
-                {mentionOpen && (
-                  <div className="chirp-mention-menu">
-                    {mentionItems.map(item => (
-                      <button key={item.id} onClick={() => pickMention(item.id)}>
-                        <span className="chirp-mention-avatar" style={{ backgroundColor: item.color || '#ECECEF' }}>
-                          {item.avatar ? <item.avatar /> : 'all'}
-                        </span>
-                        <span>
-                          <strong>{item.name}</strong>
-                        <small>{item.role}</small>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
                 <div className="chirp-input-shell">
-                  {pendingMention && (
-                    <span className="chirp-mention-chip">@{pendingMention === 'all' ? 'all' : pendingMention === 'bird' ? 'Bird' : agents.find(agent => agent.id === pendingMention)?.name}</span>
-                  )}
                   <textarea
                     rows="1"
                     value={input}
@@ -472,7 +449,7 @@ function ChirpPage() {
                         handleSend()
                       }
                     }}
-                    placeholder="说点什么..."
+                    placeholder="@ persona来回复或@all"
                   />
                   <button className="chirp-send" onClick={handleSend} aria-label="Send">
                     <svg viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>
@@ -500,13 +477,11 @@ function ChirpPage() {
                       <span>{member.name}</span>
                     </div>
                   ))}
-                  <button className="chirp-member-action" onClick={addPersonaFromCommunity}>
+                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label="添加成员">
                     <b>+</b>
-                    <span>拉人</span>
                   </button>
-                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)}>
+                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label="移除成员">
                     <b>-</b>
-                    <span>踢人</span>
                   </button>
                 </div>
               </section>
@@ -529,24 +504,6 @@ function ChirpPage() {
                     <span>Planet 名称</span>
                     <input value={planet.name} onChange={(event) => updatePlanetName(event.target.value)} />
                   </label>
-                  <label>
-                    <span>我的群昵称</span>
-                    <input value={userProfile.nickname} onChange={(event) => setUserProfile(prev => ({ ...prev, nickname: event.target.value || '我' }))} />
-                  </label>
-                  <label>
-                    <span>头像代号</span>
-                    <input value={userProfile.avatar} onChange={(event) => setUserProfile(prev => ({ ...prev, avatar: event.target.value || '我' }))} />
-                  </label>
-                  <div className="chirp-bg-row">
-                    {['#FAFAF7', '#FFF8E7', '#F4F7FA', '#F7F4FA'].map(color => (
-                      <button
-                        key={color}
-                        style={{ backgroundColor: color }}
-                        onClick={() => updateBackground(color)}
-                        aria-label={`Set background ${color}`}
-                      />
-                    ))}
-                  </div>
                 </div>
               </section>
 
@@ -595,14 +552,20 @@ function MessageBubble({ message, agents, bird }) {
   if (message.type === 'user') {
     return (
       <div className="chirp-message user">
-        <div className="chirp-bubble">{message.text}</div>
-        {!!message.tapbacks?.length && (
-          <div className="chirp-user-tapbacks">
-            {message.tapbacks.map((tapback, index) => (
-              <span key={`${tapback}-${index}`}>{tapback}</span>
-            ))}
-          </div>
-        )}
+        <div className="chirp-user-message-body">
+          <div className="chirp-bubble">{message.text}</div>
+          {!!message.tapbacks?.length && (
+            <div className="chirp-user-tapbacks">
+              {message.tapbacks.map((tapback, index) => (
+                <span key={`${tapback}-${index}`}>{tapback}</span>
+              ))}
+            </div>
+          )}
+          {message.read && <span className="chirp-read-receipt">已读</span>}
+        </div>
+        <div className="chirp-user-side-avatar">
+          <UserAvatar />
+        </div>
       </div>
     )
   }
@@ -636,7 +599,6 @@ function TypingBubble({ agent }) {
     <div className="chirp-message agent">
       <div className="chirp-agent-side-avatar" style={{ backgroundColor: agent.color }}><agent.avatar /></div>
       <div className="chirp-agent-message-body">
-        <span className="chirp-agent-name">{agent.name}</span>
         <div className="chirp-bubble typing">
           <i></i><i></i><i></i>
         </div>

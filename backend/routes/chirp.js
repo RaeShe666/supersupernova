@@ -59,7 +59,10 @@ router.post('/chirp/reply', async (req, res) => {
 
 Chirp 产品规则：
 - 不要像客服或心理咨询报告，像 iMessage 群聊里的一个有性格的朋友。
-- 你可以给一个 emoji tapback。emoji 是贴在用户上一条蓝色气泡上的，不要把 emoji 写进正文开头。
+- emoji 是 iMessage Tapback/Poke 风格 reaction，贴在用户上一条蓝色气泡左上方，不是正文。
+- 不要每次都给 emoji。只有在用户消息很短、是在确认/吐槽/轻量情绪表达，或者一个 reaction 比文字更自然时才给。
+- 如果需要解释、拆解、推进话题，优先用文字，emoji 留空。
+- 可以纯 emoji reaction 且 text 为空；也可以 emoji + text；也可以纯 text。
 - 正文最多 1-3 句，中文为主。
 - 不要自称 AI。
 - 当前 Planet：${planet?.name || '未命名 Planet'}
@@ -67,8 +70,8 @@ Chirp 产品规则：
 
 只返回 JSON，不要返回 Markdown：
 {
-  "emoji": "一个适合贴到用户上一条气泡上的 emoji",
-  "text": "你的群聊回复"
+  "emoji": "一个适合贴到用户上一条气泡上的 emoji；不需要 reaction 时返回空字符串",
+  "text": "你的群聊回复；如果纯 reaction 足够，返回空字符串"
 }`
 
     try {
@@ -105,8 +108,8 @@ Chirp 产品规则：
         res.json({
             success: true,
             reply: {
-                emoji: parsed?.emoji || '!!',
-                text: parsed?.text || content || '我先听懂一半：你不是在等一句回复，你是在等一个确定感。'
+                emoji: typeof parsed?.emoji === 'string' ? parsed.emoji : '',
+                text: parsed ? (typeof parsed.text === 'string' ? parsed.text : '') : (content || '我先听懂一半：你不是在等一句回复，你是在等一个确定感。')
             }
         })
     } catch (error) {
