@@ -199,6 +199,33 @@ const ONBOARDING_ANIMALS = {
   frog: { name: '青蛙', kw: '不内耗 · 时机感 · 突然出动', desc: '所有人还在想要不要动的时候，\n你已经跳了。', msg: '你看着躺平，时机一到就跳。\n别人还在想要不要动，\n你已经在水里了。' },
   dog: { name: '小狗', kw: '热烈 · 真诚 · 直接', desc: '你从不把喜欢藏起来。\n这世上最稀缺的不是聪明，是你这种真。', msg: '你的喜欢从来不藏着。\n赢过真心，也摔得痛过。\n但你好像从没想过收手——这很厉害。' }
 }
+const PLANET_PERSONALITY_MAP = {
+  love: { key: 'cat', animal: 'Cat', trait: 'selective closeness · clear boundaries' },
+  work: { key: 'owl', animal: 'Owl', trait: 'quiet insight · slow thinking · precise timing' },
+  self: { key: 'fish', animal: 'Fish', trait: 'fluid attention · freedom without being held' },
+  family: { key: 'rabbit', animal: 'Rabbit', trait: 'soft sensitivity · careful emotional reading' }
+}
+const ABOUT_ANIMAL_PROFILE = {
+  fox: {
+    name: 'Fox',
+    trait: 'quick read · social nuance · measured distance',
+    line: 'You read three layers of meaning in one second. Just remember: sometimes you are allowed not to solve the room.'
+  }
+}
+const BIRD_DAILY_NOTES = [
+  {
+    id: 'note-1',
+    date: 'Today',
+    title: 'Quiet Proof',
+    text: 'Today you moved between wanting closeness and wanting quiet. That is not contradiction; it is your system asking for proof before it relaxes. When the room feels uncertain, you start reading tiny signals. I would not call that overthinking. I would call it a need for steadier evidence.'
+  },
+  {
+    id: 'note-2',
+    date: 'Yesterday',
+    title: 'Third Sentence Truth',
+    text: 'You seem softer after you write things down. The first sentence is usually defensive, but by the third one you begin telling the truth. There is a pattern here: you do not need faster answers as much as you need a place where the answer can arrive without being rushed.'
+  }
+]
 const ONBOARDING_QUESTIONS = {
   q1: { label: '1 / 7', text: <>你在一段熟悉的关系里，<br />更接近哪个？</>, options: ['听的人——对方说，我接住', '带节奏的人——去哪吃什么我来安排', '偶尔消失的人——突然就想自己待一会儿', '主动的人——我不找，怕就断了'] },
   q2: { label: '2 / 7', text: <>深夜 emo 的时候，<br />你更可能在干嘛？</>, options: ['反复刷某个人的朋友圈或聊天记录', '裹在被子里发呆，或者哭一场', '打开备忘录写点什么，把脑子理一理', '找个人说话，或刷点搞笑视频别再想了'] },
@@ -253,6 +280,12 @@ const PaletteIcon = () => (
     <path d="M12 22 C7 22 3 18.2 3 13.4 C3 8.1 7.3 4 12.8 4 C17.8 4 21 7.1 21 10.8 C21 13.1 19.5 14.5 17.8 14.5 H16.2 C15 14.5 14.2 15.5 14.6 16.7 L14.9 17.5 C15.7 20 14.3 22 12 22 Z" />
   </svg>
 )
+
+const truncateWords = (text, limit = 32) => {
+  const words = text.trim().split(/\s+/)
+  if (words.length <= limit) return text
+  return `${words.slice(0, limit).join(' ')}...`
+}
 
 function ChirpHomePage({ page, id }) {
   const { user } = useAuth()
@@ -406,9 +439,7 @@ function ChirpHomePage({ page, id }) {
   if (page === 'about-me') {
     return (
       <div className="chirp-home-page">
-        <main className="chirp-about-placeholder">
-          <div className="sec-label">About Me</div>
-        </main>
+        <AboutMePage chirpProfile={chirpProfile} planets={planets} />
         {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
       </div>
     )
@@ -486,6 +517,81 @@ function ChirpHomePage({ page, id }) {
       <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
       {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
     </div>
+  )
+}
+
+function AboutMePage({ chirpProfile, planets }) {
+  const [expandedNoteId, setExpandedNoteId] = useState(null)
+  const animalKey = 'fox'
+  const animal = ABOUT_ANIMAL_PROFILE[animalKey]
+  const birdName = chirpProfile?.birdName && chirpProfile.birdName !== 'Bird' ? chirpProfile.birdName : '小草'
+
+  return (
+    <main className="chirp-about-page">
+      <section className="chirp-about-profile">
+        <div className="about-profile-head">
+          <div className="about-profile-avatar">
+            <OnboardingAnimalAvatar animal={animalKey} />
+          </div>
+          <div className="about-profile-copy">
+            <div className="sec-label">About Me</div>
+            <h1>{animal.name}</h1>
+            <div className="about-profile-traits">{animal.trait}</div>
+          </div>
+        </div>
+        <div className="about-profile-line">
+          <p>{animal.line}</p>
+        </div>
+      </section>
+
+      <section className="chirp-about-insights">
+        <div className="about-section-head">
+          <div>
+            <div className="sec-label">{birdName}'s Planet Findings</div>
+          </div>
+        </div>
+
+        <div className="about-planet-types">
+          {planets.map(planet => {
+            const personality = PLANET_PERSONALITY_MAP[planet.id] || { key: 'fox', animal: 'Fox', trait: 'quick read · social nuance · measured distance' }
+            return (
+              <article className="about-planet-type" key={planet.id} style={{ '--planet-color': planet.color }}>
+                <span>{getPlanetCardTitle(planet)}</span>
+                <div className="about-planet-animal">
+                  <span className="about-planet-animal-avatar">
+                    <OnboardingAnimalAvatar animal={personality.key} />
+                  </span>
+                  <strong>{personality.animal}</strong>
+                </div>
+                <p>{personality.trait}</p>
+              </article>
+            )
+          })}
+        </div>
+
+        <div className="about-notes-block">
+          <div className="about-section-head compact">
+            <div>
+              <div className="sec-label">{birdName} Notes</div>
+            </div>
+          </div>
+          <div className="about-notes-list">
+            {BIRD_DAILY_NOTES.map(note => {
+              const expanded = expandedNoteId === note.id
+              return (
+                <button className={`about-note ${expanded ? 'expanded' : ''}`} type="button" key={note.id} onClick={() => setExpandedNoteId(expanded ? null : note.id)}>
+                  <div className="about-note-meta">
+                    <span>{note.date}</span>
+                    <strong>{note.title}</strong>
+                  </div>
+                  <p>{expanded ? note.text : truncateWords(note.text, 28)}</p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }
 
