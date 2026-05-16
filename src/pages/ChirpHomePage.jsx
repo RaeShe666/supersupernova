@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import ChirpPage from './ChirpPage'
 import {
@@ -20,11 +20,13 @@ import {
 import {
   loadChirpPlanets,
   loadChirpProfile,
+  loadChirpMomentAiEntries,
   loadChirpMomentEntries,
   loadCustomPersonas,
   loadPlanetActivityFromMessages,
   loadPlanetMemberPersonas,
   saveChirpProfile,
+  saveChirpMomentAiEntry,
   saveChirpMomentEntry,
   saveCustomPersonaToSupabase,
   savePlanetMemberPersonas,
@@ -291,7 +293,7 @@ const truncateWords = (text, limit = 32) => {
 }
 
 function ChirpHomePage({ page, id }) {
-  const { user } = useAuth()
+  const { user, getAccessToken } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerMode, setDrawerMode] = useState('menu')
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT_WIDTH)
@@ -451,7 +453,7 @@ function ChirpHomePage({ page, id }) {
   if (page === 'moments') {
     return (
       <div className="chirp-home-page">
-        <MomentsPage user={user} planets={planets} />
+        <MomentsPage user={user} getAccessToken={getAccessToken} planets={planets} />
         {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
       </div>
     )
@@ -635,24 +637,26 @@ const MOMENT_SPACES = [
 
 const MOMENT_SAMPLE_ENTRIES = {
   xw: [
-    { id: 'sample-xw-1', dateKey: 'today', dateLabel: 'Today', time: '15 : 08 · W', tone: 'fr', text: '中午那个汤！！好喝到原地升天，下次一起去', image: 'soup', imageText: '🍲 那家小店' },
-    { id: 'sample-xw-2', dateKey: 'today', dateLabel: 'Today', time: '14 : 22 · X', tone: 'me', text: '路过咖啡店，门口的猫又在晒太阳。跟你说过的那只。', image: 'cat', imageText: '🐱 cat in the sun' },
-    { id: 'sample-xw-3', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '10 : 30 · W', tone: 'fr', text: '早上阳光洒进来，突然很想发条消息给你。又忍住了。' },
+    { id: 'sample-xw-5', dateKey: 'may-10', dateLabel: 'May 10', time: '18 : 45 · W', tone: 'fr', text: '公园里有人在放风筝。线断了，风筝越飞越远。莫名觉得自由。' },
     { id: 'sample-xw-4', dateKey: 'may-12', dateLabel: 'May 12', time: '09 : 15 · X', tone: 'me', text: '今天天气好得不真实' },
-    { id: 'sample-xw-5', dateKey: 'may-10', dateLabel: 'May 10', time: '18 : 45 · W', tone: 'fr', text: '公园里有人在放风筝。线断了，风筝越飞越远。莫名觉得自由。' }
+    { id: 'sample-xw-6', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '21 : 04 · X', tone: 'me', text: '看到一家咖啡店的招牌，突然想到你。没什么理由。' },
+    { id: 'sample-xw-3', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '10 : 30 · W', tone: 'fr', text: '早上阳光洒进来，突然很想发条消息给你。又忍住了。' },
+    { id: 'sample-xw-2', dateKey: 'today', dateLabel: 'Today', time: '14 : 22 · X', tone: 'me', text: '路过咖啡店，门口的猫又在晒太阳。跟你说过的那只。', image: 'cat', imageText: '🐱 cat in the sun' },
+    { id: 'sample-xw-1', dateKey: 'today', dateLabel: 'Today', time: '15 : 08 · W', tone: 'fr', text: '中午那个汤！！好喝到原地升天，下次一起去', image: 'soup', imageText: '🍲 那家小店' }
   ],
   'inner-child': [
-    { id: 'sample-inner-1', dateKey: 'today', dateLabel: 'Today', time: '16 : 12 · S', tone: 'me', text: '刚刚买到最后一只草莓面包，像被今天偷偷偏爱了一下。' },
-    { id: 'sample-inner-2', dateKey: 'today', dateLabel: 'Today', time: '13 : 27 · S', tone: 'me', text: '灵机一现：下次写东西可以先写标题，别急着证明自己很完整。' },
-    { id: 'sample-inner-3', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '09 : 48 · S', tone: 'me', text: '碎碎念：今天的云像被揉皱的纸巾，但看着很安心。' },
+    { id: 'sample-inner-5', dateKey: 'may-10', dateLabel: 'May 10', time: '21 : 08 · S', tone: 'me', text: '看完动画片莫名想哭。是被那种“很简单的好”打到了。' },
     { id: 'sample-inner-4', dateKey: 'may-12', dateLabel: 'May 12', time: '12 : 15 · S', tone: 'me', text: '午饭吃了碗特别好吃的牛肉面。幸福就是这么简单。' },
-    { id: 'sample-inner-5', dateKey: 'may-10', dateLabel: 'May 10', time: '21 : 08 · S', tone: 'me', text: '看完动画片莫名想哭。是被那种“很简单的好”打到了。' }
+    { id: 'sample-inner-6', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '22 : 18 · S', tone: 'me', text: '睡前突然想到，今天其实已经比昨天更像自己一点。' },
+    { id: 'sample-inner-3', dateKey: 'yesterday', dateLabel: 'Yesterday', time: '09 : 48 · S', tone: 'me', text: '碎碎念：今天的云像被揉皱的纸巾，但看着很安心。' },
+    { id: 'sample-inner-2', dateKey: 'today', dateLabel: 'Today', time: '13 : 27 · S', tone: 'me', text: '灵机一现：下次写东西可以先写标题，别急着证明自己很完整。' },
+    { id: 'sample-inner-1', dateKey: 'today', dateLabel: 'Today', time: '16 : 12 · S', tone: 'me', text: '刚刚买到最后一只草莓面包，像被今天偷偷偏爱了一下。' }
   ]
 }
 
 const MOMENTS_BIRD_PROMPT = {
   id: 'bird-inner-child-prompt',
-  dateKey: 'today',
+  dateKey: 'bird-today',
   dateLabel: 'Today',
   time: '小草 · now',
   tone: 'bird',
@@ -663,6 +667,7 @@ const readLocalMomentEntries = (planetId) => {
   if (typeof window === 'undefined') return []
   try {
     return JSON.parse(window.localStorage.getItem(`chirpMoments:${planetId}`) || '[]')
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
   } catch {
     return []
   }
@@ -705,7 +710,7 @@ function MomentsCalendarDay({ kind, day, today, onOpen }) {
   )
 }
 
-function MomentsPage({ user, planets }) {
+function MomentsPage({ user, getAccessToken, planets }) {
   const [aiMode, setAiMode] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [bgPickerOpen, setBgPickerOpen] = useState(false)
@@ -718,6 +723,11 @@ function MomentsPage({ user, planets }) {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState(null)
   const [draftEntryId, setDraftEntryId] = useState(null)
+  const [aiEntries, setAiEntries] = useState([])
+  const [aiThinking, setAiThinking] = useState(false)
+  const memoScrollRef = useRef(null)
+  const composerRef = useRef(null)
+  const lastAiRequestRef = useRef('')
 
   const activeMoment = useMemo(() => {
     return MOMENT_SPACES.find(space => space.id === activeMomentId) || MOMENT_SPACES[0]
@@ -733,15 +743,20 @@ function MomentsPage({ user, planets }) {
       const localEntries = readLocalMomentEntries(activeMomentId)
       if (!user || !backingPlanet?.dbId) {
         setMomentEntries(localEntries)
+        if (activeMomentId !== 'inner-child') setAiEntries([])
         setDraftText('')
         setDraftEntryId(null)
         return
       }
       try {
-        const remoteEntries = await loadChirpMomentEntries(backingPlanet)
+        const remoteEntries = await loadChirpMomentEntries(backingPlanet, activeMomentId)
+        const remoteAiEntries = activeMomentId === 'inner-child'
+          ? await loadChirpMomentAiEntries(backingPlanet, activeMomentId)
+          : []
         const entries = remoteEntries?.length ? remoteEntries : localEntries
         if (!cancelled) {
           setMomentEntries(entries)
+          setAiEntries(remoteAiEntries || [])
           setDraftText('')
           setDraftEntryId(null)
         }
@@ -749,6 +764,7 @@ function MomentsPage({ user, planets }) {
         console.warn('Failed to load Moments entries:', error)
         if (!cancelled) {
           setMomentEntries(localEntries)
+          if (activeMomentId !== 'inner-child') setAiEntries([])
           setDraftText('')
           setDraftEntryId(null)
         }
@@ -769,23 +785,25 @@ function MomentsPage({ user, planets }) {
     try {
       let nextEntry = localEntry
       if (user && backingPlanet?.dbId) {
-        nextEntry = await saveChirpMomentEntry(backingPlanet, text, draftEntryId)
+        nextEntry = await saveChirpMomentEntry(backingPlanet, text, draftEntryId, activeMomentId)
       }
       const restEntries = momentEntries.filter(entry => entry.id !== draftEntryId && entry.id !== nextEntry.id)
-      const nextEntries = [nextEntry, ...restEntries]
+      const nextEntries = [...restEntries, nextEntry].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
       setMomentEntries(nextEntries)
       setDraftEntryId(nextEntry.id)
       saveLocalMomentEntries(activeMomentId, nextEntries)
       setSavedAt(Date.now())
       window.dispatchEvent(new CustomEvent('chirp:planet-activity'))
+      requestMomentAiReply(text, nextEntries)
     } catch (error) {
       console.warn('Failed to save Moment entry:', error)
       const restEntries = momentEntries.filter(entry => entry.id !== draftEntryId && entry.id !== localEntry.id)
-      const nextEntries = [localEntry, ...restEntries]
+      const nextEntries = [...restEntries, localEntry].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
       setMomentEntries(nextEntries)
       setDraftEntryId(localEntry.id)
       saveLocalMomentEntries(activeMomentId, nextEntries)
       setSavedAt(Date.now())
+      requestMomentAiReply(text, nextEntries)
     } finally {
       setSaving(false)
     }
@@ -799,8 +817,133 @@ function MomentsPage({ user, planets }) {
   }, [draftText])
 
   useEffect(() => {
+    if (!composerActive || !memoScrollRef.current) return
+    window.requestAnimationFrame(() => {
+      const scroll = memoScrollRef.current
+      if (!scroll) return
+      scroll.scrollTop = scroll.scrollHeight - scroll.clientHeight
+    })
+  }, [composerActive, draftText])
+
+  useEffect(() => {
+    if (!composerActive || !composerRef.current) return
+    if (!draftText && composerRef.current.textContent) composerRef.current.textContent = ''
+    composerRef.current.focus()
+  }, [composerActive, draftText])
+
+  useEffect(() => {
+    if (calendarOpen || composerActive) return
+    window.setTimeout(() => {
+      document.getElementById('moment-date-yesterday')?.scrollIntoView({ block: 'start' })
+    }, 0)
+  }, [activeMomentId, momentEntries.length, calendarOpen, composerActive])
+
+  useEffect(() => {
     if (activeMomentId !== 'inner-child' && aiMode) setAiMode(false)
   }, [activeMomentId, aiMode])
+
+  useEffect(() => {
+    if (activeMomentId !== 'inner-child') {
+      setAiEntries([])
+      lastAiRequestRef.current = ''
+    }
+  }, [activeMomentId])
+
+  useEffect(() => {
+    setComposerActive(false)
+    setDraftText('')
+    setDraftEntryId(null)
+    if (composerRef.current) composerRef.current.textContent = ''
+  }, [activeMomentId])
+
+  const requestMomentAiReply = async (text, entriesContext = momentEntries) => {
+    const trimmed = text.trim()
+    if (!trimmed || trimmed.length < 4) return
+    if (!aiMode || activeMomentId !== 'inner-child') return
+    if (lastAiRequestRef.current === trimmed) return
+    lastAiRequestRef.current = trimmed
+
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const apiBase = import.meta.env.VITE_API_URL || (isLocalHost ? 'http://localhost:8080' : '')
+    const token = getAccessToken ? await getAccessToken() : null
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers.Authorization = `Bearer ${token}`
+
+    setAiThinking(true)
+    try {
+      const contextMessages = [
+        ...entriesContext.slice(-8).map(entry => ({ type: 'memo', text: entry.text })),
+        ...aiEntries.slice(-4).map(entry => ({ type: 'agent', agentId: 'bird', text: entry.text })),
+        { type: 'user', text: trimmed }
+      ]
+      const response = await fetch(`${apiBase}/api/chirp/reply`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          planet: {
+            id: 'moments-inner-child',
+            name: 'the inner child',
+            type: 'private moment',
+            tone: 'private reflective writing',
+            recentUserMessage: trimmed
+          },
+          user: { nickname: 'S', avatar: 'S' },
+          agent: {
+            id: 'bird',
+            name: '小草',
+            role: 'Moment writing companion',
+            description: '小草 helps the user keep writing by asking one grounded follow-up question.',
+            systemPrompt: 'You are 小草 inside Chirp Moments. The user has turned on AI Mode, which means you are allowed to read this private Moment and help them keep writing. Reply in the user language. Ask exactly one gentle, concrete follow-up question unless a very short reflection is more useful. Do not mention Planet. Do not summarize everything. Max 1-2 short sentences.'
+          },
+          members: [{ id: 'bird', name: '小草', role: 'Moment writing companion' }],
+          messages: contextMessages
+        })
+      })
+      if (!response.ok) throw new Error(`Moment AI request failed: ${response.status}`)
+      const data = await response.json()
+      const replyText = data?.reply?.text?.trim()
+      if (!replyText) return
+      let replyEntry = {
+        id: `bird-${Date.now()}`,
+        createdAt: Date.now(),
+        time: '小草 · now',
+        text: replyText
+      }
+      if (user && backingPlanet?.dbId) {
+        replyEntry = await saveChirpMomentAiEntry(backingPlanet, replyText, activeMomentId) || replyEntry
+      }
+      setAiEntries(prev => [...prev, replyEntry])
+    } catch (error) {
+      console.warn('Failed to request Moment AI reply:', error)
+    } finally {
+      setAiThinking(false)
+    }
+  }
+
+  const toggleAiMode = () => {
+    if (activeMomentId !== 'inner-child') return
+    const next = !aiMode
+    setAiMode(next)
+    if (next && !aiEntries.length) {
+      const promptEntry = {
+        id: MOMENTS_BIRD_PROMPT.id,
+        createdAt: Date.now(),
+        time: MOMENTS_BIRD_PROMPT.time,
+        text: MOMENTS_BIRD_PROMPT.text
+      }
+      setAiEntries([promptEntry])
+      if (user && backingPlanet?.dbId) {
+        saveChirpMomentAiEntry(backingPlanet, MOMENTS_BIRD_PROMPT.text, activeMomentId)
+          .then(savedEntry => {
+            if (!savedEntry) return
+            setAiEntries(prev => prev.map(entry => (
+              entry.id === MOMENTS_BIRD_PROMPT.id ? savedEntry : entry
+            )))
+          })
+          .catch(error => console.warn('Failed to save Moment AI prompt:', error))
+      }
+    }
+  }
 
   const jumpToMomentDate = (month, day) => {
     const target = MOMENTS_DATE_TARGETS[month]?.[day] || 'today'
@@ -827,9 +970,7 @@ function MomentsPage({ user, planets }) {
 
   const sampleSections = useMemo(() => {
     const sections = []
-    const entries = aiMode && activeMomentId === 'inner-child'
-      ? [MOMENTS_BIRD_PROMPT, ...(MOMENT_SAMPLE_ENTRIES[activeMomentId] || [])]
-      : (MOMENT_SAMPLE_ENTRIES[activeMomentId] || [])
+    const entries = (MOMENT_SAMPLE_ENTRIES[activeMomentId] || [])
     ;entries.forEach(entry => {
       let section = sections.find(item => item.key === entry.dateKey)
       if (!section) {
@@ -840,6 +981,12 @@ function MomentsPage({ user, planets }) {
     })
     return sections
   }, [activeMomentId])
+
+  const todayEntries = useMemo(() => {
+    const userEntries = momentEntries.map(entry => ({ ...entry, source: 'me' }))
+    const birdEntries = activeMomentId === 'inner-child' ? aiEntries.map(entry => ({ ...entry, source: 'bird' })) : []
+    return [...userEntries, ...birdEntries].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+  }, [activeMomentId, aiEntries, momentEntries])
 
   return (
     <main className="chirp-moments-page">
@@ -876,7 +1023,7 @@ function MomentsPage({ user, planets }) {
             <button className="moments-m-tool" type="button" title="Attach"><MomentsPaperclipIcon /></button>
             <button className="moments-m-tool" type="button" title="Voice"><MomentsMicIcon /></button>
             {activeMomentId === 'inner-child' && (
-              <button className={`moments-m-aimode ${aiMode ? 'on' : ''}`} type="button" onClick={() => setAiMode(prev => !prev)}>
+              <button className={`moments-m-aimode ${aiMode ? 'on' : ''}`} type="button" onClick={toggleAiMode}>
                 <span>AI Mode</span>
                 <span className="moments-ai-switch" />
               </button>
@@ -892,17 +1039,11 @@ function MomentsPage({ user, planets }) {
           </div>
         </div>
 
-        <div className={`moments-memo-scroll ${paperPattern}`} onClick={() => setComposerActive(true)}>
+        <div className={`moments-memo-scroll ${paperPattern}`} ref={memoScrollRef} onClick={() => setComposerActive(true)}>
           <div className="moments-memo-doc">
             {sampleSections.map(section => (
               <section className="moments-date-group" id={`moment-date-${section.key}`} key={section.key}>
                 <div className="moments-date-section">{section.label}</div>
-                {section.key === 'today' && momentEntries.map(entry => (
-                  <div className="moments-entry" key={entry.id}>
-                    <div className="moments-entry-time">{formatActivityTime(entry.createdAt)} · S</div>
-                    <div className="moments-entry-text me" lang={/[\u4e00-\u9fff]/.test(entry.text) ? 'zh' : 'en'}>{entry.text}</div>
-                  </div>
-                ))}
                 {section.entries.map(entry => (
                   <div className="moments-entry" key={entry.id}>
                     <div className="moments-entry-time">{entry.time}</div>
@@ -914,20 +1055,33 @@ function MomentsPage({ user, planets }) {
                     )}
                   </div>
                 ))}
+                {section.key === 'today' && todayEntries.map(entry => (
+                  <div className="moments-entry" key={entry.id}>
+                    <div className="moments-entry-time">{entry.source === 'bird' ? entry.time : `${formatActivityTime(entry.createdAt)} · S`}</div>
+                    <div className={`moments-entry-text ${entry.source === 'bird' ? 'bird' : 'me'}`} lang={/[\u4e00-\u9fff]/.test(entry.text) ? 'zh' : 'en'}>{entry.text}</div>
+                  </div>
+                ))}
+                {section.key === 'today' && aiThinking && (
+                  <div className="moments-entry moments-bird-entry">
+                    <div className="moments-entry-time">小草 · now</div>
+                    <div className="moments-entry-text bird" lang="zh">我在看你刚写下来的这一句。</div>
+                  </div>
+                )}
               </section>
             ))}
 
             {composerActive && (
               <div className="moments-composer">
-                <textarea
-                  value={draftText}
-                  onChange={(event) => {
-                    setDraftText(event.target.value)
+                <div
+                  ref={composerRef}
+                  className="moments-paper-editor"
+                  contentEditable
+                  suppressContentEditableWarning
+                  data-placeholder="Write a moment..."
+                  onInput={(event) => {
+                    setDraftText(event.currentTarget.textContent || '')
                     setComposerActive(true)
                   }}
-                  autoFocus
-                  placeholder="Write a moment..."
-                  rows="2"
                 />
                 <div className="moments-save-state">{saving ? 'Saving' : ''}</div>
               </div>
@@ -1461,6 +1615,7 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
 }
 
 export default ChirpHomePage
+
 
 
 

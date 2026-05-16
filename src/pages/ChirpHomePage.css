@@ -2302,13 +2302,13 @@
 }
 
 .moments-memo-doc {
-  padding: 24px 80px 100px;
+  padding: 24px 80px 140px;
 }
 
 .moments-date-section {
   font-family: "Caveat", cursive;
-  font-size: 26px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 400;
   color: var(--moments-ink-mute);
   margin: 32px 0 14px;
   padding-bottom: 6px;
@@ -2360,6 +2360,11 @@
   color: var(--moments-ink-mid);
 }
 
+.moments-bird-entry {
+  padding: 12px 0 4px 18px;
+  border-left: 2px solid #DCC4EA;
+}
+
 .moments-entry-img {
   border-radius: 12px;
   overflow: hidden;
@@ -2405,10 +2410,8 @@
   padding-top: 0;
 }
 
-.moments-composer textarea {
+.moments-paper-editor {
   min-height: 58px;
-  max-height: 160px;
-  resize: none;
   border: 0;
   outline: 0;
   background: transparent;
@@ -2418,16 +2421,20 @@
   font-size: 20px;
   line-height: 1.75;
   padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.moments-composer textarea:lang(zh) {
+.moments-paper-editor:lang(zh) {
   font-family: "XiaolaiChirp", "ArimoChirp", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-.moments-composer textarea::placeholder {
+.moments-paper-editor:empty::before {
+  content: attr(data-placeholder);
   color: rgba(184, 176, 162, 0.9);
-  font-size: 20px;
+  font-size: 16px;
   line-height: 1.75;
+  pointer-events: none;
 }
 
 .moments-save-state {

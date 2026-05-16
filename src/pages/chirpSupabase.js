@@ -185,7 +185,7 @@ export async function saveChirpMessage(planet, message) {
   return data
 }
 
-export async function loadChirpMomentEntries(planet) {
+export async function loadChirpMomentEntries(planet, momentKey = 'default') {
   if (!planet?.dbId) return null
 
   const { data, error } = await supabase
@@ -193,7 +193,8 @@ export async function loadChirpMomentEntries(planet) {
     .select('*')
     .eq('planet_id', planet.dbId)
     .eq('sender_type', 'memo')
-    .order('created_at', { ascending: false })
+    .eq('sender_id', `moment:${momentKey}`)
+    .order('created_at', { ascending: true })
 
   if (error) throw error
 
@@ -204,7 +205,7 @@ export async function loadChirpMomentEntries(planet) {
   }))
 }
 
-export async function saveChirpMomentEntry(planet, text, entryId) {
+export async function saveChirpMomentEntry(planet, text, entryId, momentKey = 'default') {
   if (!planet?.dbId || !text?.trim()) return null
 
   if (entryId && !String(entryId).startsWith('local-')) {
@@ -216,6 +217,7 @@ export async function saveChirpMomentEntry(planet, text, entryId) {
       .eq('id', entryId)
       .eq('planet_id', planet.dbId)
       .eq('sender_type', 'memo')
+      .eq('sender_id', `moment:${momentKey}`)
       .select()
       .single()
 
@@ -232,7 +234,7 @@ export async function saveChirpMomentEntry(planet, text, entryId) {
     .insert({
       planet_id: planet.dbId,
       sender_type: 'memo',
-      sender_id: 'user',
+      sender_id: `moment:${momentKey}`,
       text: text.trim(),
       tapbacks: []
     })
@@ -244,6 +246,51 @@ export async function saveChirpMomentEntry(planet, text, entryId) {
     id: data.id,
     text: data.text || '',
     createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+  }
+}
+
+export async function loadChirpMomentAiEntries(planet, momentKey = 'default') {
+  if (!planet?.dbId) return []
+
+  const { data, error } = await supabase
+    .from('chirp_messages')
+    .select('*')
+    .eq('planet_id', planet.dbId)
+    .eq('sender_type', 'agent')
+    .eq('sender_id', `moment:${momentKey}:bird`)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+
+  return (data || []).map(row => ({
+    id: row.id,
+    text: row.text || '',
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    time: '小草 · now'
+  }))
+}
+
+export async function saveChirpMomentAiEntry(planet, text, momentKey = 'default') {
+  if (!planet?.dbId || !text?.trim()) return null
+
+  const { data, error } = await supabase
+    .from('chirp_messages')
+    .insert({
+      planet_id: planet.dbId,
+      sender_type: 'agent',
+      sender_id: `moment:${momentKey}:bird`,
+      text: text.trim(),
+      tapbacks: []
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return {
+    id: data.id,
+    text: data.text || '',
+    createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
+    time: '小草 · now'
   }
 }
 
