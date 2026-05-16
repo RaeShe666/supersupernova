@@ -6,8 +6,7 @@ import {
   getPlanetById,
   getPlanetRecent,
   readPlanetActivity,
-  truncateTitle,
-  truncateWords
+  truncateTitle
 } from './chirpShared'
 import './ChirpHomePage.css'
 
@@ -83,10 +82,14 @@ const planetArt = {
 }
 
 const getCardTitle = (planet) => (planet.id === 'work' ? 'My Odyssey' : 'Crush with...')
+const DRAWER_MIN_WIDTH = 260
+const DRAWER_DEFAULT_WIDTH = 300
+const DRAWER_MAX_WIDTH = 340
 
 function ChirpHomePage({ page, id }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerMode, setDrawerMode] = useState('menu')
+  const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT_WIDTH)
   const [planetActivity, setPlanetActivity] = useState(() => readPlanetActivity())
   const selectedPlanet = useMemo(() => (
     page === 'planet' ? getPlanetById(id) : null
@@ -97,6 +100,21 @@ function ChirpHomePage({ page, id }) {
   const openPlanetDrawer = () => {
     setDrawerMode('planets')
     setDrawerOpen(true)
+  }
+
+  const startDrawerResize = (event) => {
+    event.preventDefault()
+    const updateWidth = (moveEvent) => {
+      const nextWidth = Math.min(DRAWER_MAX_WIDTH, Math.max(DRAWER_MIN_WIDTH, moveEvent.clientX))
+      setDrawerWidth(nextWidth)
+    }
+    const stopResize = () => {
+      window.removeEventListener('mousemove', updateWidth)
+      window.removeEventListener('mouseup', stopResize)
+    }
+
+    window.addEventListener('mousemove', updateWidth)
+    window.addEventListener('mouseup', stopResize)
   }
 
   useEffect(() => {
@@ -120,7 +138,7 @@ function ChirpHomePage({ page, id }) {
     return (
       <div className="chirp-home-detail">
         <ChirpPage planetConfig={selectedPlanet} onBack={openPlanetDrawer} />
-        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} />
+        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
       </div>
     )
   }
@@ -180,7 +198,7 @@ function ChirpHomePage({ page, id }) {
         </div>
       </main>
 
-      <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} />
+      <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
     </div>
   )
 }
@@ -212,18 +230,18 @@ function DrawerPlanetCard({ planet, onClick, recent }) {
             <div className="pc-name">{truncateTitle(getCardTitle(planet), 4)}</div>
             <time className="pc-time">{recent.time}</time>
           </div>
-          <div className="pc-quote">{truncateWords(recent.rawText || recent.text, 6)}</div>
+          <div className="pc-quote">{recent.rawText || recent.text}</div>
         </div>
       </div>
     </button>
   )
 }
 
-function SideDrawer({ open, mode, setMode, onClose, recentFor }) {
+function SideDrawer({ open, mode, setMode, onClose, recentFor, drawerWidth, onResizeStart }) {
   return (
     <>
       {open && <button className="chirp-home-drawer-scrim" type="button" aria-label="Close menu" onClick={onClose} />}
-      <aside className={`chirp-home-drawer ${open ? 'open' : ''}`}>
+      <aside className={`chirp-home-drawer ${open ? 'open' : ''}`} style={{ '--drawer-width': `${drawerWidth}px` }}>
         <div className="chirp-home-drawer-head">
           <strong>{mode === 'planets' ? 'My Planet' : 'chirp'}</strong>
           <button type="button" aria-label="Close menu" onClick={onClose}>×</button>
@@ -238,10 +256,9 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor }) {
           </div>
         ) : (
           <div className="chirp-home-drawer-planets">
-            <button className="planet-card pc-create drawer-planet-card drawer-create-card" type="button">
-              <div className="pc-create-illu"><CreatePlanetIcon /></div>
-              <div className="pc-create-title">My Planet</div>
-              <div className="pc-create-desc">Name it. Color it. Make it yours.</div>
+            <button className="planet-card pc-create drawer-planet-card drawer-create-card" type="button" aria-label="Create planet">
+              <span className="drawer-create-plus">+</span>
+              <span className="drawer-create-label">create my planet</span>
             </button>
             {CHIRP_PLANETS.map(planet => (
               <DrawerPlanetCard
@@ -259,8 +276,10 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor }) {
 
         <div className="chirp-home-drawer-admin">
           <span style={{ backgroundColor: BIRD.color }}><BIRD.avatar /></span>
-          <div><strong>Bird</strong><small>Admin · only replies when mentioned</small></div>
+          <strong>Bird</strong>
+          <button type="button">Chat</button>
         </div>
+        <button className="chirp-home-drawer-resize" type="button" aria-label="Resize sidebar" onMouseDown={onResizeStart} />
       </aside>
     </>
   )
