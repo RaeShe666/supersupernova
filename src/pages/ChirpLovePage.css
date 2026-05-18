@@ -1,0 +1,821 @@
+@font-face {
+  font-family: "ArimoChirp";
+  src: url("/fonts/Arimo-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
+}
+
+@font-face {
+  font-family: "ArimoChirp";
+  src: url("/fonts/Arimo-SemiBold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0100-024F, U+1E00-1EFF;
+}
+
+.chirp-page {
+  --chirp-ink: #2A2A2A;
+  --chirp-muted: #77777C;
+  --chirp-line: #D9D9DD;
+  --chirp-blue: #0A84FF;
+  --chirp-bubble-agent: #E9E9EB;
+  --chirp-control: #FFFFFF;
+  --chirp-control-radius: 24px;
+  --chirp-soft-shadow: 0 12px 30px rgba(24, 24, 27, 0.12);
+  --chirp-edge: 24px;
+  --chirp-avatar: 48px;
+  height: calc(100vh - 56px);
+  min-height: 0;
+  background: #FAFAF7;
+  color: var(--chirp-ink);
+  font-family: "ArimoChirp", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  overflow: hidden;
+}
+
+.chirp-shell {
+  height: calc(100vh - 56px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 20px 20px, rgba(200, 195, 185, 0.22) 1px, transparent 1px),
+    var(--chirp-paper);
+  background-size: 24px 24px;
+  overflow: hidden;
+}
+
+.chirp-topbar {
+  height: 62px;
+  flex: 0 0 62px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 22px;
+  background: rgba(250, 250, 247, 0.96);
+  border-bottom: 1px solid rgba(217, 217, 221, 0.45);
+}
+
+.chirp-back,
+.chirp-more {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--chirp-ink);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.chirp-back svg,
+.chirp-more svg,
+.chirp-group-title svg,
+.chirp-send svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chirp-more svg {
+  fill: currentColor;
+  stroke: none;
+}
+
+.chirp-group-title {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--chirp-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chirp-group-title > span {
+  max-width: 280px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chirp-avatar-svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #1F1F1F;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chirp-avatar-svg ellipse,
+.chirp-avatar-svg path:first-child,
+.chirp-avatar-svg path:nth-child(3) {
+  fill: currentColor;
+}
+
+.chirp-avatar-svg circle {
+  fill: #1F1F1F;
+}
+
+.chirp-main {
+  flex: 1;
+  min-height: 0;
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.chirp-chat {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chirp-timeline {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px var(--chirp-edge) 18px;
+}
+
+.chirp-date {
+  margin: 14px 0 18px;
+  text-align: center;
+  color: #92929A;
+  font-size: 13px;
+}
+
+.chirp-system-note {
+  width: fit-content;
+  max-width: min(620px, 86%);
+  margin: 12px auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(241, 241, 243, 0.9);
+  color: #8A8A8A;
+  font-size: 12px;
+  text-align: center;
+}
+
+.chirp-message {
+  position: relative;
+  width: 100%;
+  margin: 18px 0;
+  display: flex;
+}
+
+.chirp-message.user {
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.chirp-message.memo {
+  justify-content: flex-end;
+  padding-right: calc(var(--chirp-avatar) + 14px);
+}
+
+.chirp-message.agent {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.chirp-bubble {
+  max-width: min(760px, calc(100vw - 150px));
+  padding: 16px 20px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.chirp-message.user .chirp-bubble {
+  background: #E8F1FF;
+  color: var(--chirp-ink);
+  border-bottom-right-radius: 18px;
+}
+
+.chirp-user-message-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: min(760px, calc(100vw - 150px));
+}
+
+.chirp-user-side-avatar {
+  width: var(--chirp-avatar);
+  height: var(--chirp-avatar);
+  border-radius: 999px;
+  background: #EDEDEF;
+  color: #5F5F66;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.chirp-message.memo .chirp-bubble {
+  background: rgba(241, 241, 243, 0.95);
+  color: #5F5F66;
+  border-radius: 18px;
+  font-size: 14px;
+}
+
+.chirp-message.agent .chirp-bubble {
+  background: var(--chirp-bubble-agent);
+  border-bottom-left-radius: 18px;
+}
+
+.chirp-agent-side-avatar {
+  width: var(--chirp-avatar);
+  height: var(--chirp-avatar);
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.chirp-agent-message-body {
+  position: relative;
+  max-width: min(760px, calc(100vw - 150px));
+}
+
+.chirp-agent-name {
+  display: block;
+  margin: 0 0 5px 10px;
+  color: #7E7E86;
+  font-size: 13px;
+}
+
+.chirp-user-tapbacks {
+  position: absolute;
+  left: -14px;
+  top: -11px;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(245, 245, 247, 0.68);
+  border: 0;
+  box-shadow: 0 4px 12px rgba(24, 24, 27, 0.1);
+  backdrop-filter: blur(10px);
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  z-index: 2;
+}
+
+.chirp-user-tapbacks span {
+  min-width: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.chirp-read-receipt {
+  margin: 3px 4px 0 0;
+  color: #8E8E93;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.chirp-bubble.typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 15px 18px;
+}
+
+.chirp-bubble.typing i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #B6B6BC;
+  animation: chirpBlink 1.1s infinite ease-in-out;
+}
+
+.chirp-bubble.typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chirp-bubble.typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes chirpBlink {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.chirp-composer {
+  flex: 0 0 auto;
+  padding: 16px var(--chirp-edge) 18px;
+  background: rgba(250, 250, 247, 0.96);
+  border-top: 0;
+}
+
+.chirp-input-row {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chirp-upload-button {
+  width: 54px;
+  height: 54px;
+  border: 0;
+  border-radius: 999px;
+  background: #F3F3F4;
+  color: #73737A;
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.chirp-file-input {
+  display: none;
+}
+
+.chirp-input-shell {
+  flex: 1;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 9px 9px 22px;
+  border-radius: 999px;
+  background: #F3F3F4;
+  border: 0;
+}
+
+.chirp-input-shell textarea {
+  flex: 1;
+  min-height: 25px;
+  max-height: 92px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  padding: 0;
+  background: transparent;
+  color: var(--chirp-ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.chirp-input-shell textarea::placeholder {
+  color: #B6B6BC;
+}
+
+.chirp-send {
+  width: 54px;
+  height: 54px;
+  border: 0;
+  border-radius: 999px;
+  background: #F3F3F4;
+  color: #73737A;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.chirp-send svg {
+  width: 26px;
+  height: 26px;
+}
+
+.chirp-mention-menu {
+  position: absolute;
+  left: 0;
+  bottom: 56px;
+  z-index: 8;
+  width: min(310px, 86vw);
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(217, 217, 221, 0.95);
+  box-shadow: var(--chirp-soft-shadow);
+}
+
+.chirp-mention-menu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  color: var(--chirp-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.chirp-mention-menu button:hover {
+  background: #F3F3F5;
+}
+
+.chirp-mention-menu button.is-active {
+  background: #EAF3FF;
+}
+
+.chirp-mention-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.chirp-mention-menu strong {
+  display: block;
+  font-size: 14px;
+}
+
+.chirp-mention-menu small {
+  display: block;
+  color: #8A8A8A;
+}
+
+.chirp-settings {
+  position: fixed;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  z-index: 230;
+  width: min(400px, 92vw);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(250, 250, 247, 0.98);
+  border-left: 0;
+  transform: translateX(100%);
+  transition: transform 180ms ease;
+}
+
+.settings-open .chirp-settings {
+  transform: translateX(0);
+}
+
+.chirp-settings-scrim {
+  position: fixed;
+  inset: 56px 0 0 0;
+  z-index: 220;
+  border: 0;
+  background: rgba(18, 18, 18, 0.42);
+  cursor: default;
+}
+
+.chirp-settings-head {
+  flex: 0 0 62px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  height: 62px;
+  padding: 0 18px;
+  border-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chirp-settings-head button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--chirp-ink);
+}
+
+.chirp-settings-head button svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.chirp-settings-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 20px 26px;
+}
+
+.chirp-settings-body section {
+  margin-bottom: 24px;
+}
+
+.chirp-room-profile {
+  flex: 0 0 62px;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0 72px 0 40px;
+  border-bottom: 1px solid rgba(217, 217, 221, 0.45);
+}
+
+.chirp-room-profile-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.chirp-room-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #A8C5DA;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.chirp-room-name-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--chirp-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.chirp-settings-body h3 {
+  margin: 0 0 10px;
+  color: #85858D;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chirp-members-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px 12px;
+}
+
+.chirp-member,
+.chirp-member-action {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  color: #6C6C73;
+  font-size: 12px;
+  text-align: center;
+}
+
+.chirp-member-avatar,
+.chirp-member-action b {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.chirp-member-action {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chirp-member-action b {
+  border: 1.5px dashed #C3C3C8;
+  background: #fff;
+  color: #9A9AA1;
+  font-size: 30px;
+  font-weight: 300;
+}
+
+.chirp-admin-card,
+.chirp-settings-card,
+.chirp-agent-row {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(217, 217, 221, 0.52);
+  border-radius: 16px;
+}
+
+.chirp-admin-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+}
+
+.chirp-admin-avatar,
+.chirp-agent-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #F5C878;
+  overflow: hidden;
+}
+
+.chirp-user-photo {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  color: #1F1F1F;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.chirp-admin-card p {
+  margin: 2px 0 0;
+  color: #77777C;
+  font-size: 12px;
+}
+
+.chirp-settings-card {
+  padding: 13px;
+}
+
+.chirp-settings-card label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.chirp-settings-card label:last-of-type {
+  margin-bottom: 0;
+}
+
+.chirp-settings-card span {
+  color: #8A8A8A;
+  font-size: 12px;
+}
+
+.chirp-settings-card input {
+  width: 100%;
+  border: 1px solid rgba(217, 217, 221, 0.55);
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: #fff;
+  color: var(--chirp-ink);
+  font: inherit;
+}
+
+.chirp-agent-list {
+  display: grid;
+  gap: 10px;
+}
+
+.chirp-agent-row {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.chirp-agent-row strong {
+  display: block;
+  font-size: 14px;
+}
+
+.chirp-agent-row span {
+  display: block;
+  color: #77777C;
+  font-size: 12px;
+}
+
+.chirp-agent-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.chirp-agent-actions button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #F0F0F2;
+  color: #4B4B52;
+  cursor: pointer;
+}
+
+.chirp-settings-footer {
+  flex: 0 0 auto;
+  padding: 14px 20px 18px;
+  background: rgba(250, 250, 247, 0.98);
+  display: flex;
+  justify-content: center;
+}
+
+.chirp-settings-footer button {
+  width: min(240px, 100%);
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chirp-ink);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chirp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 300;
+  transform: translateX(-50%);
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(31, 31, 31, 0.9);
+  color: #fff;
+  font-size: 13px;
+}
+
+@media (max-width: 980px) {
+  .chirp-shell {
+    height: calc(100vh - 56px);
+    min-height: calc(100vh - 56px);
+  }
+
+  .chirp-settings {
+    width: min(360px, 92vw);
+  }
+}
+
+@media (max-width: 640px) {
+  .chirp-topbar {
+    padding: 0 10px;
+  }
+
+  .chirp-timeline {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chirp-bubble {
+    max-width: 78vw;
+    font-size: 15px;
+  }
+
+  .chirp-composer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+}

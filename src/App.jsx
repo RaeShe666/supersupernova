@@ -5,6 +5,10 @@ import HomePage from './pages/HomePage'
 import EditorPage from './pages/EditorPage'
 import LoginPage from './pages/LoginPage'
 import ChirpHomePage, { OnboardingAnimalAvatar, readOnboardingProfile } from './pages/ChirpHomePage'
+import ChirpLoveHomePage, {
+  OnboardingAnimalAvatar as ChirpLoveOnboardingAnimalAvatar,
+  readOnboardingProfile as readChirpLoveOnboardingProfile
+} from './pages/ChirpLoveHomePage'
 import { extractBrandKit } from './services/aiService'
 import './App.css'
 
@@ -34,6 +38,7 @@ function AppContent() {
   const [isExtracting, setIsExtracting] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
   const [chirpProfile, setChirpProfile] = useState(() => readOnboardingProfile())
+  const [chirpLoveProfile, setChirpLoveProfile] = useState(() => readChirpLoveOnboardingProfile())
   const projectsLoadedRef = useRef(false)
   const initialEditorProjectId = useRef(
     route.section === 'brandkit' && route.page === 'editor' ? route.id : null
@@ -131,7 +136,10 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
-    const refreshChirpProfile = () => setChirpProfile(readOnboardingProfile())
+    const refreshChirpProfile = () => {
+      setChirpProfile(readOnboardingProfile())
+      setChirpLoveProfile(readChirpLoveOnboardingProfile())
+    }
     window.addEventListener('chirp:onboarding-updated', refreshChirpProfile)
     window.addEventListener('storage', refreshChirpProfile)
     return () => {
@@ -307,27 +315,30 @@ function AppContent() {
   }
 
   const handleGlobalBrandTextClick = () => {
-    if (currentSection === 'chirp') {
-      if (!window.localStorage.getItem('chirpOnboardingProfile')) {
+    if (currentSection === 'chirp' || currentSection === 'chirp.love') {
+      const profileKey = currentSection === 'chirp.love' ? 'chirpLoveOnboardingProfile' : 'chirpOnboardingProfile'
+      if (!window.localStorage.getItem(profileKey)) {
         window.dispatchEvent(new CustomEvent('chirp:open-onboarding'))
         return
       }
-      navigateTo('chirp')
+      navigateTo(currentSection)
       return
     }
 
     navigateTo()
   }
 
+  const chirpRouteBase = currentSection === 'chirp.love' ? 'chirp.love' : 'chirp'
   const chirpNavItems = [
-    { label: 'home', page: null, action: () => navigateTo('chirp') },
-    { label: 'planet', page: 'planet', action: () => navigateTo('chirp', 'planet', 'love') },
-    { label: 'persona', page: 'persona', action: () => navigateTo('chirp', 'persona') },
-    { label: 'moments', page: 'moments', action: () => navigateTo('chirp', 'moments') }
+    { label: 'home', page: null, action: () => navigateTo(chirpRouteBase) },
+    { label: 'planet', page: 'planet', action: () => navigateTo(chirpRouteBase, 'planet', 'love') },
+    { label: 'persona', page: 'persona', action: () => navigateTo(chirpRouteBase, 'persona') },
+    { label: 'moments', page: 'moments', action: () => navigateTo(chirpRouteBase, 'moments') }
   ]
 
   const isWaitingForEditorProject = currentSection === 'brandkit' && currentPage === 'editor' && !currentProject && initialEditorProjectId.current
-  const isPublicSection = currentSection === 'landing' || currentSection === 'chirp'
+  const isChirpSection = currentSection === 'chirp' || currentSection === 'chirp.love'
+  const isPublicSection = currentSection === 'landing' || isChirpSection
   if (!isPublicSection && (loading || dataLoading || isWaitingForEditorProject)) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -375,6 +386,10 @@ function AppContent() {
       return <ChirpHomePage page={currentPage} id={currentId} />
     }
 
+    if (currentSection === 'chirp.love') {
+      return <ChirpLoveHomePage page={currentPage} id={currentId} />
+    }
+
     // Landing page
     return (
       <div className="landing-page">
@@ -391,7 +406,7 @@ function AppContent() {
   return (
     <div className="app">
       {/* Global Top Nav */}
-      <nav className={`global-nav ${currentSection === 'chirp' ? 'chirp-nav' : ''}`}>
+      <nav className={`global-nav ${isChirpSection ? 'chirp-nav' : ''}`}>
         <div className="global-nav-brand">
           <img
             src="/logo-home-transparent.png"
@@ -400,11 +415,11 @@ function AppContent() {
             onClick={handleGlobalLogoClick}
           />
           <button className="global-nav-brand-text" type="button" onClick={handleGlobalBrandTextClick}>
-            {currentSection === 'chirp' ? 'chirp' : 'SYL.AILABS'}
+            {isChirpSection ? currentSection : 'SYL.AILABS'}
           </button>
         </div>
 
-        {currentSection === 'chirp' ? (
+        {isChirpSection ? (
           <div className="global-nav-center">
             {chirpNavItems.map(item => (
               <button
@@ -431,13 +446,23 @@ function AppContent() {
             >
               Chirp
             </a>
+            <a
+              className={`global-nav-link ${currentSection === 'chirp.love' ? 'active' : ''}`}
+              onClick={() => navigateTo('chirp.love')}
+            >
+              chirp.love
+            </a>
           </div>
         )}
 
         <div className="global-nav-right">
-          {currentSection === 'chirp' && user && chirpProfile ? (
-            <button className="global-nav-animal-button" type="button" onClick={() => navigateTo('chirp', 'about-me')} aria-label="About Me">
-              <OnboardingAnimalAvatar animal={chirpProfile.animal} />
+          {isChirpSection && user && (currentSection === 'chirp.love' ? chirpLoveProfile : chirpProfile) ? (
+            <button className="global-nav-animal-button" type="button" onClick={() => navigateTo(chirpRouteBase, 'about-me')} aria-label="About Me">
+              {currentSection === 'chirp.love' ? (
+                <ChirpLoveOnboardingAnimalAvatar animal={chirpLoveProfile.animal} />
+              ) : (
+                <OnboardingAnimalAvatar animal={chirpProfile.animal} />
+              )}
             </button>
           ) : user ? (
             <UserMenu user={user} onSignOut={handleSignOut} />
