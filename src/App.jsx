@@ -5,10 +5,6 @@ import HomePage from './pages/HomePage'
 import EditorPage from './pages/EditorPage'
 import LoginPage from './pages/LoginPage'
 import ChirpHomePage, { OnboardingAnimalAvatar, readOnboardingProfile } from './pages/ChirpHomePage'
-import ChirpLoveHomePage, {
-  OnboardingAnimalAvatar as ChirpLoveOnboardingAnimalAvatar,
-  readOnboardingProfile as readChirpLoveOnboardingProfile
-} from './pages/ChirpLoveHomePage'
 import { extractBrandKit } from './services/aiService'
 import './App.css'
 
@@ -38,7 +34,6 @@ function AppContent() {
   const [isExtracting, setIsExtracting] = useState(false)
   const [dataLoading, setDataLoading] = useState(true)
   const [chirpProfile, setChirpProfile] = useState(() => readOnboardingProfile())
-  const [chirpLoveProfile, setChirpLoveProfile] = useState(() => readChirpLoveOnboardingProfile())
   const projectsLoadedRef = useRef(false)
   const initialEditorProjectId = useRef(
     route.section === 'brandkit' && route.page === 'editor' ? route.id : null
@@ -138,7 +133,6 @@ function AppContent() {
   useEffect(() => {
     const refreshChirpProfile = () => {
       setChirpProfile(readOnboardingProfile())
-      setChirpLoveProfile(readChirpLoveOnboardingProfile())
     }
     window.addEventListener('chirp:onboarding-updated', refreshChirpProfile)
     window.addEventListener('storage', refreshChirpProfile)
@@ -315,9 +309,8 @@ function AppContent() {
   }
 
   const handleGlobalBrandTextClick = () => {
-    if (currentSection === 'chirp' || currentSection === 'chirp.love') {
-      const profileKey = currentSection === 'chirp.love' ? 'chirpLoveOnboardingProfile' : 'chirpOnboardingProfile'
-      if (!window.localStorage.getItem(profileKey)) {
+    if (currentSection === 'chirp') {
+      if (!window.localStorage.getItem('chirpOnboardingProfile')) {
         window.dispatchEvent(new CustomEvent('chirp:open-onboarding'))
         return
       }
@@ -328,16 +321,15 @@ function AppContent() {
     navigateTo()
   }
 
-  const chirpRouteBase = currentSection === 'chirp.love' ? 'chirp.love' : 'chirp'
   const chirpNavItems = [
-    { label: 'home', page: null, action: () => navigateTo(chirpRouteBase) },
-    { label: 'planet', page: 'planet', action: () => navigateTo(chirpRouteBase, 'planet', 'love') },
-    { label: 'persona', page: 'persona', action: () => navigateTo(chirpRouteBase, 'persona') },
-    { label: 'moments', page: 'moments', action: () => navigateTo(chirpRouteBase, 'moments') }
+    { label: 'home', page: null, action: () => navigateTo('chirp') },
+    { label: 'planet', page: 'planet', action: () => navigateTo('chirp', 'planet', 'love') },
+    { label: 'persona', page: 'persona', action: () => navigateTo('chirp', 'persona') },
+    { label: 'moments', page: 'moments', action: () => navigateTo('chirp', 'moments') }
   ]
 
   const isWaitingForEditorProject = currentSection === 'brandkit' && currentPage === 'editor' && !currentProject && initialEditorProjectId.current
-  const isChirpSection = currentSection === 'chirp' || currentSection === 'chirp.love'
+  const isChirpSection = currentSection === 'chirp'
   const isPublicSection = currentSection === 'landing' || isChirpSection
   if (!isPublicSection && (loading || dataLoading || isWaitingForEditorProject)) {
     return (
@@ -384,10 +376,6 @@ function AppContent() {
 
     if (currentSection === 'chirp') {
       return <ChirpHomePage page={currentPage} id={currentId} />
-    }
-
-    if (currentSection === 'chirp.love') {
-      return <ChirpLoveHomePage page={currentPage} id={currentId} />
     }
 
     // Landing page
@@ -446,23 +434,13 @@ function AppContent() {
             >
               Chirp
             </a>
-            <a
-              className={`global-nav-link ${currentSection === 'chirp.love' ? 'active' : ''}`}
-              onClick={() => navigateTo('chirp.love')}
-            >
-              chirp.love
-            </a>
           </div>
         )}
 
         <div className="global-nav-right">
-          {isChirpSection && user && (currentSection === 'chirp.love' ? chirpLoveProfile : chirpProfile) ? (
-            <button className="global-nav-animal-button" type="button" onClick={() => navigateTo(chirpRouteBase, 'about-me')} aria-label="About Me">
-              {currentSection === 'chirp.love' ? (
-                <ChirpLoveOnboardingAnimalAvatar animal={chirpLoveProfile.animal} />
-              ) : (
-                <OnboardingAnimalAvatar animal={chirpProfile.animal} />
-              )}
+          {isChirpSection && user && chirpProfile ? (
+            <button className="global-nav-animal-button" type="button" onClick={() => navigateTo('chirp', 'about-me')} aria-label="About Me">
+              <OnboardingAnimalAvatar animal={chirpProfile.animal} />
             </button>
           ) : user ? (
             <UserMenu user={user} onSignOut={handleSignOut} />
