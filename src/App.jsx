@@ -328,6 +328,11 @@ function AppContent() {
     { label: 'moments', page: 'moments', action: () => navigateTo('chirp', 'moments') }
   ]
 
+  const brandKitNavItems = [
+    { label: 'demo studio', page: 'demo-studio', action: () => navigateTo('brandkit', 'demo-studio') },
+    { label: 'my asset', page: 'assets', action: () => navigateTo('brandkit', 'assets') }
+  ]
+
   const isWaitingForEditorProject = currentSection === 'brandkit' && currentPage === 'editor' && !currentProject && initialEditorProjectId.current
   const isChirpSection = currentSection === 'chirp'
   const isPublicSection = currentSection === 'landing' || isChirpSection
@@ -363,6 +368,7 @@ function AppContent() {
       }
       return (
         <HomePage
+          page={currentPage}
           projects={projects}
           onExtract={handleExtract}
           onEditProject={handleEditProject}
@@ -410,6 +416,19 @@ function AppContent() {
         {isChirpSection ? (
           <div className="global-nav-center">
             {chirpNavItems.map(item => (
+              <button
+                className={`global-nav-home-link ${currentPage === item.page ? 'active' : ''}`}
+                type="button"
+                key={item.label}
+                onClick={item.action}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : currentSection === 'brandkit' ? (
+          <div className="global-nav-center">
+            {brandKitNavItems.map(item => (
               <button
                 className={`global-nav-home-link ${currentPage === item.page ? 'active' : ''}`}
                 type="button"
