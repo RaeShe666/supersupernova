@@ -163,44 +163,281 @@
     transform: rotate(0deg) translate(-2px, -2px);
 }
 
-.demo-studio-panel {
+.demo-editor-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 292px;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.demo-preview-stage,
+.demo-control-panel,
+.demo-timeline-panel {
+    position: relative;
     border: 2px solid #1a2e22;
     background: #fffefc;
-    padding: 32px;
     box-shadow: 8px 8px 0 rgba(26, 46, 34, 0.08);
     filter: url(#squiggly-1);
 }
 
-.demo-studio-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
+.demo-preview-stage {
+    min-height: 430px;
+    padding: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.demo-studio-list span {
-    border-bottom: 2px solid rgba(26, 46, 34, 0.25);
+.demo-preview-stage.bg-sage {
+    background: #dfe8dc;
+}
+
+.demo-preview-stage.bg-paper {
+    background: #fffefc;
+}
+
+.demo-preview-stage.bg-ink {
+    background: #1a2e22;
+}
+
+.demo-screen-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 2px solid #1a2e22;
+    border-radius: 18px;
+    background: rgba(255, 254, 252, 0.92);
+    box-shadow: 0 18px 48px rgba(26, 46, 34, 0.18);
+    overflow: hidden;
+}
+
+.demo-preview-video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    background: #111;
+}
+
+.demo-empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    text-align: center;
+    color: #1a2e22;
+}
+
+.demo-empty-state span {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #2E5C46;
+}
+
+.demo-empty-state strong {
+    max-width: 380px;
+    font-family: var(--font-serif);
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1.15;
+}
+
+.demo-recording-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    border: 2px solid #1a2e22;
+    background: #fffefc;
     color: #1a2e22;
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 12px 0;
+    letter-spacing: 0.1em;
+    padding: 8px 10px;
     text-transform: uppercase;
 }
 
-.demo-studio-note {
-    max-width: 680px;
-    color: #2E5C46;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.7;
+.demo-recording-badge::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #b7392f;
+    margin-right: 8px;
 }
 
-.demo-studio-note code {
-    background: rgba(46, 92, 70, 0.08);
+.demo-control-panel {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.demo-control-head h3 {
+    margin-top: 8px;
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 500;
     color: #1a2e22;
-    padding: 2px 6px;
+}
+
+.demo-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.demo-control-group label {
+    color: #2E5C46;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.demo-background-options {
+    display: flex;
+    gap: 10px;
+}
+
+.demo-bg-swatch {
+    width: 42px;
+    height: 42px;
+    border: 2px solid rgba(26, 46, 34, 0.35);
+    cursor: pointer;
+}
+
+.demo-bg-swatch.sage {
+    background: #dfe8dc;
+}
+
+.demo-bg-swatch.paper {
+    background: #fffefc;
+}
+
+.demo-bg-swatch.ink {
+    background: #1a2e22;
+}
+
+.demo-bg-swatch.active {
+    border-color: #1a2e22;
+    box-shadow: 4px 4px 0 rgba(26, 46, 34, 0.12);
+}
+
+.demo-feature-list {
+    display: grid;
+    gap: 8px;
+}
+
+.demo-feature-list span {
+    border-bottom: 1px solid rgba(26, 46, 34, 0.18);
+    color: #1a2e22;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.demo-error {
+    border: 1px solid rgba(183, 57, 47, 0.35);
+    background: rgba(183, 57, 47, 0.08);
+    color: #7b221c;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 10px;
+}
+
+.demo-action-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.demo-primary-action,
+.demo-secondary-action {
+    border: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 18px;
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.demo-primary-action {
+    background: #1a2e22;
+    color: #F0F2F0;
+}
+
+.demo-primary-action.stop {
+    background: #b7392f;
+}
+
+.demo-secondary-action {
+    border: 2px solid #1a2e22;
+    color: #1a2e22;
+    background: transparent;
+}
+
+.demo-timeline-panel {
+    margin-top: 24px;
+    padding: 22px 24px;
+}
+
+.demo-timeline-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    color: #1a2e22;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.demo-timeline-head small {
+    color: #2E5C46;
+    font-size: 11px;
+}
+
+.demo-timeline-track {
+    height: 44px;
+    border: 2px dashed rgba(26, 46, 34, 0.25);
+    background: rgba(46, 92, 70, 0.04);
+    padding: 8px;
+}
+
+.demo-timeline-track span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: rgba(46, 92, 70, 0.25);
+    transition: width 0.3s ease;
+}
+
+.demo-timeline-track.active span {
+    width: 64%;
 }
 
 .section-header-block {
@@ -590,7 +827,7 @@
     }
 
     .brandkit-entry-grid,
-    .demo-studio-list {
+    .demo-editor-shell {
         grid-template-columns: 1fr;
     }
 
