@@ -78,6 +78,8 @@ const windowBtnClasses =
 
 const hudSidebarClasses = "ml-0.5 pl-1.5 border-l border-white/10 flex items-center gap-0.5";
 
+const launchFeatureChips = ["Cursor follow", "Smart zoom", "Custom background"];
+
 export function LaunchWindow() {
 	const t = useScopedT("launch");
 	const availableLocales = getAvailableLocales();
@@ -586,6 +588,38 @@ export function LaunchWindow() {
 				</div>
 			)}
 
+			{!recording && !showMicControls && !showWebcamControls && (
+				<div
+					data-hud-interactive="true"
+					className={`fixed bottom-[72px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#07080a]/85 px-3 py-2 text-white shadow-[0_16px_44px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl ${styles.electronNoDrag}`}
+					onPointerEnter={() => setHudMouseEventsEnabled(true)}
+					onPointerDown={() => setHudMouseEventsEnabled(true)}
+					onMouseEnter={() => setHudMouseEventsEnabled(true)}
+					onMouseLeave={() => {
+						if (!isLanguageMenuOpen) {
+							setHudMouseEventsEnabled(false);
+						}
+					}}
+				>
+					<div className="flex items-center gap-2 pr-1.5">
+						<div className="text-[11px] font-semibold tracking-[0.08em] text-white/85">
+							Demo Studio
+						</div>
+						<div className="h-4 w-px bg-white/10" />
+					</div>
+					<div className="flex items-center gap-1.5">
+						{launchFeatureChips.map((feature) => (
+							<span
+								key={feature}
+								className="rounded-full border border-white/[0.07] bg-white/[0.045] px-2 py-1 text-[10px] font-medium text-white/62"
+							>
+								{feature}
+							</span>
+						))}
+					</div>
+				</div>
+			)}
+
 			{/* HUD bar — fixed at bottom center, viewport-relative, never moves */}
 			<div
 				data-hud-interactive="true"
@@ -618,8 +652,8 @@ export function LaunchWindow() {
 					title={selectedSource}
 				>
 					{getIcon("monitor", "text-white/80")}
-					<span className="max-w-[86px] truncate text-[11px] font-medium text-white/75">
-						{selectedSource}
+					<span className="max-w-[132px] truncate text-[11px] font-medium text-white/75">
+						{hasSelectedSource ? `Record: ${selectedSource}` : "Choose source"}
 					</span>
 				</button>
 
@@ -755,10 +789,11 @@ export function LaunchWindow() {
 						<Tooltip content={t("tooltips.openVideoFile")}>
 							<button
 								data-testid="launch-open-video-button"
-								className={`${hudIconBtnClasses} ${styles.electronNoDrag}`}
+								className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-medium text-white/65 transition-all duration-150 hover:bg-white/10 hover:text-white active:scale-95 ${styles.electronNoDrag}`}
 								onClick={openVideoFile}
 							>
 								{getIcon("videoFile", "text-white/60")}
+								<span>Edit video</span>
 							</button>
 						</Tooltip>
 
@@ -766,10 +801,11 @@ export function LaunchWindow() {
 						<Tooltip content={t("tooltips.openProject")}>
 							<button
 								data-testid="launch-open-project-button"
-								className={`${hudIconBtnClasses} ${styles.electronNoDrag}`}
+								className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-medium text-white/65 transition-all duration-150 hover:bg-white/10 hover:text-white active:scale-95 ${styles.electronNoDrag}`}
 								onClick={openProjectFile}
 							>
 								{getIcon("folder", "text-white/60")}
+								<span>Open project</span>
 							</button>
 						</Tooltip>
 					</>

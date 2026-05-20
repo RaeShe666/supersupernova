@@ -158,7 +158,7 @@ export function SourceSelector() {
 					disabled={!selectedSource}
 					className="h-8 rounded-lg bg-[#34B27B] px-5 text-[11px] font-semibold text-white transition-transform duration-150 hover:bg-[#34B27B]/85 active:scale-95 disabled:bg-zinc-700 disabled:opacity-30"
 				>
-					{tc("actions.share")}
+					Use source
 				</Button>
 			</div>
 		</div>

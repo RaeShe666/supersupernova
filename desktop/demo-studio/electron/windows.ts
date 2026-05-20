@@ -53,7 +53,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 	const primaryDisplay = screen.getPrimaryDisplay();
 	const { workArea } = primaryDisplay;
 
-	const windowWidth = 600;
+	const windowWidth = 760;
 	const windowHeight = 160;
 
 	const x = Math.floor(workArea.x + (workArea.width - windowWidth) / 2);
@@ -62,8 +62,8 @@ export function createHudOverlayWindow(): BrowserWindow {
 	const win = new BrowserWindow({
 		width: windowWidth,
 		height: windowHeight,
-		minWidth: 600,
-		maxWidth: 600,
+		minWidth: 760,
+		maxWidth: 760,
 		minHeight: 160,
 		maxHeight: 160,
 		x: x,
@@ -134,7 +134,7 @@ export function createEditorWindow(): BrowserWindow {
 		resizable: true,
 		alwaysOnTop: false,
 		skipTaskbar: false,
-		title: "OpenScreen",
+		title: "Demo Studio",
 		backgroundColor: "#000000",
 		show: !HEADLESS,
 		webPreferences: {
