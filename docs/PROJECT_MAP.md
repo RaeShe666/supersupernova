@@ -5,6 +5,10 @@ This repo currently contains two products under the SYL.AILABS platform:
 - Brand Kit
 - Chirp
 
+Brand Kit also contains one desktop sub-function:
+
+- Demo Studio
+
 Do not add separate product forks by copying whole pages. If a product needs a variant, add configuration inside the existing product module first.
 
 ## Product Routes
@@ -35,6 +39,7 @@ Brand Kit owns:
 
 - brand extraction
 - project list and editor
+- desktop demo recording and editing through `desktop/demo-studio`
 - `projects` records in Supabase
 - backend extraction and screenshot routes
 

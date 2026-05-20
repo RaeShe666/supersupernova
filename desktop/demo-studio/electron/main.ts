@@ -22,6 +22,8 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+app.setName("Demo Studio");
+
 // Use Screen & System Audio Recording permissions instead of CoreAudio Tap API on macOS.
 // CoreAudio Tap requires NSAudioCaptureUsageDescription in the parent app's Info.plist,
 // which doesn't work when running from a terminal/IDE during development, makes my life easier
@@ -137,7 +139,7 @@ function setupApplicationMenu() {
 			submenu: [
 				{
 					role: "about",
-					label: mainT("common", "actions.about") || "About OpenScreen",
+					label: mainT("common", "actions.about") || "About Demo Studio",
 				},
 				{ type: "separator" },
 				{
@@ -147,7 +149,7 @@ function setupApplicationMenu() {
 				{ type: "separator" },
 				{
 					role: "hide",
-					label: mainT("common", "actions.hide") || "Hide OpenScreen",
+					label: mainT("common", "actions.hide") || "Hide Demo Studio",
 				},
 				{
 					role: "hideOthers",
@@ -299,7 +301,7 @@ function updateTrayMenu(recording: boolean = false) {
 		? mainT("common", "actions.recordingStatus", {
 				source: selectedSourceName,
 			}) || `Recording: ${selectedSourceName}`
-		: "OpenScreen";
+		: "Demo Studio";
 	const menuTemplate = recording
 		? [
 				{
@@ -494,7 +496,7 @@ app.whenReady().then(async () => {
 
 	// Request microphone permission from macOS. Screen Recording is requested
 	// lazily from the source-picker action so the system prompt is not hidden
-	// behind OpenScreen's source selector window.
+	// behind Demo Studio's source selector window.
 	if (process.platform === "darwin") {
 		const micStatus = systemPreferences.getMediaAccessStatus("microphone");
 		if (micStatus !== "granted") {
