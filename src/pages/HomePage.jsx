@@ -296,24 +296,17 @@ function HomePage({ page, projects, onExtract, onEditProject, onDeleteProject, i
                     </div>
                 </div>
 
-                {/* Paper Doodle Dialog Box */}
-                <div className="doodle-dialog-wrapper">
-                    <form onSubmit={handleExtract} className="doodle-dialog">
-                        {/* Paper background with squiggly filter */}
-                        <div className="doodle-paper-bg"></div>
-
-                        {/* Content */}
-                        <div className="doodle-content">
-                            <div className="doodle-input-group">
-                                <label className="doodle-label">
+                <div className="asset-form-wrapper">
+                    <form onSubmit={handleExtract} className="asset-form">
+                        <div className="asset-form-content">
+                            <div className="asset-form-input-group">
+                                <label className="asset-form-label">
                                     <span className="asterisk">*</span> Brand URL
                                 </label>
-                                <div className="doodle-input-wrapper">
-                                    <div className="doodle-underline-base"></div>
-                                    <div className="doodle-underline-active"></div>
+                                <div className="asset-form-input-wrapper">
                                     <input
                                         type="text"
-                                        className="doodle-input"
+                                        className="asset-form-input"
                                         placeholder="www.example.com"
                                         value={url}
                                         onChange={(e) => setUrl(e.target.value)}
@@ -325,14 +318,13 @@ function HomePage({ page, projects, onExtract, onEditProject, onDeleteProject, i
                                 </div>
                             </div>
 
-                            <div className="doodle-action-area">
+                            <div className="asset-form-action-area">
                                 <button
                                     type="submit"
-                                    className="doodle-button"
+                                    className="asset-form-button"
                                     disabled={isExtracting || !url.trim()}
                                 >
-                                    <span className="doodle-button-bg"></span>
-                                    <span className="doodle-button-text">
+                                    <span className="asset-form-button-text">
                                         {isExtracting ? 'Extracting...' : 'Extract Brand Kit'}
                                         {!isExtracting && (
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -344,10 +336,6 @@ function HomePage({ page, projects, onExtract, onEditProject, onDeleteProject, i
                                 </button>
                             </div>
                         </div>
-
-                        {/* Corner decorations */}
-                        <div className="corner-deco corner-top-left"></div>
-                        <div className="corner-deco corner-bottom-right"></div>
                     </form>
                 </div>
             </section>
@@ -396,21 +384,6 @@ function HomePage({ page, projects, onExtract, onEditProject, onDeleteProject, i
 
     return (
         <div className="home-page">
-            <svg className="svg-filters">
-                <defs>
-                    <filter id="squiggly-0">
-                        <feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="0" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
-                    </filter>
-                    <filter id="squiggly-1">
-                        <feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="1" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" />
-                    </filter>
-                </defs>
-            </svg>
-
-            <div className="global-noise"></div>
-
             {activePage === 'demo-studio' ? renderDemoStudio() : activePage === 'assets' ? renderAssets() : renderLanding()}
 
             {/* Loading Overlay */}
