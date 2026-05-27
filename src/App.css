@@ -48,8 +48,10 @@
 }
 
 .global-nav.chirp-nav {
+    --chirp-ui-font: "ArimoChirp", "PingFang SC", "Hiragino Sans GB", "Noto Sans Simplified Chinese", "Noto Sans SC", "Microsoft YaHei", sans-serif;
     background: rgba(240, 242, 240, 0.97);
     border-bottom-color: rgba(46, 92, 70, 0.15);
+    font-family: var(--chirp-ui-font);
 }
 
 .global-nav.chirp-nav .global-nav-brand-text {
@@ -62,6 +64,14 @@
 
 .global-nav.chirp-nav .global-nav-brand-text:hover {
     color: #2E5C46;
+}
+
+.global-nav.chirp-nav .global-nav-home-link,
+.global-nav.chirp-nav .global-nav-auth,
+.global-nav.chirp-nav .global-user-menu,
+.global-nav.chirp-nav .global-dropdown-item,
+.global-nav.chirp-nav .global-language-switch button {
+    font-family: var(--chirp-ui-font);
 }
 
 .global-nav-home-link {
@@ -137,6 +147,10 @@
     align-items: center;
 }
 
+.global-profile-menu {
+    position: relative;
+}
+
 .global-nav-animal-button {
     width: 38px;
     height: 38px;
@@ -155,7 +169,8 @@
     opacity: 0.78;
 }
 
-.global-nav-animal-button svg {
+.global-nav-animal-button svg,
+.global-nav-animal-button img {
     width: 34px;
     height: 34px;
     display: block;
@@ -252,6 +267,68 @@
     font-size: 13px;
     color: #333;
     font-family: var(--font-mono);
+}
+
+.global-language-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 10px 12px;
+}
+
+.global-language-switch button {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 7px 8px;
+    background: transparent;
+    color: #4f5653;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.global-language-switch button.active {
+    border-color: rgba(46, 92, 70, 0.2);
+    background: rgba(46, 92, 70, 0.1);
+    color: #1a2e22;
+}
+
+.global-language-switch button:hover {
+    background: rgba(46, 92, 70, 0.08);
+}
+
+.global-chirp-dropdown {
+    min-width: 142px;
+    right: -10px;
+    padding: 0;
+    overflow: hidden;
+    font-family: var(--chirp-ui-font);
+    letter-spacing: 0;
+}
+
+.global-chirp-dropdown .global-language-switch {
+    gap: 2px;
+    padding: 6px;
+}
+
+.global-chirp-dropdown .global-language-switch button {
+    height: 30px;
+    padding: 0 7px;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.global-chirp-dropdown .global-dropdown-item {
+    padding: 11px 13px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.global-chirp-dropdown .global-dropdown-divider {
+    margin: 0;
 }
 
 .global-dropdown-item:hover {

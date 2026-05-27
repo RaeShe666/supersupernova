@@ -35,8 +35,9 @@ const createInitialMessages = (planet) => {
   ]
 }
 
-function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
+function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack, language = 'en' }) {
   const { user, getAccessToken } = useAuth()
+  const isChinese = language === 'zh'
   const initialAgents = useMemo(() => getPersonasForPlanet(planetConfig), [planetConfig])
   const [planet, setPlanet] = useState({
     id: planetConfig.id,
@@ -142,9 +143,9 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
       color: agent.color,
       avatar: agent.avatar
     })),
-    { id: 'bird', label: 'Bird', insertText: '@Bird ', role: 'Admin', color: bird.color, avatar: bird.avatar },
-    { id: 'all', label: 'all', insertText: '@all ', role: 'Replies in order', color: '#ECECEF', avatar: null }
-  ], [agents, bird])
+    { id: 'bird', label: 'Bird', insertText: '@Bird ', role: isChinese ? '管理员' : 'Admin', color: bird.color, avatar: bird.avatar },
+    { id: 'all', label: 'all', insertText: '@all ', role: isChinese ? '按顺序回复' : 'Replies in order', color: '#ECECEF', avatar: null }
+  ], [agents, bird, isChinese])
 
   const filteredMentionItems = useMemo(() => {
     const normalizedQuery = mentionQuery.trim().toLowerCase()
@@ -235,10 +236,10 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
     event.target.value = ''
     if (!file) return
     if (file.size > MAX_UPLOAD_BYTES) {
-      showToast('Image is larger than 8MB and cannot be uploaded.')
+      showToast(isChinese ? '图片大于 8MB，无法上传。' : 'Image is larger than 8MB and cannot be uploaded.')
       return
     }
-    showToast('Image upload is not available yet.')
+    showToast(isChinese ? '暂不支持图片上传。' : 'Image upload is not available yet.')
   }
 
   const requestAgentReply = async (agent, currentMessages) => {
@@ -302,7 +303,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
 
     if (!replyText) {
       setTypingAgentId(null)
-      showToast('AI connection failed. Please try again.')
+      showToast(isChinese ? 'AI 连接失败，请重试。' : 'AI connection failed. Please try again.')
       return
     }
 
@@ -316,30 +317,30 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   const addPersonaFromCommunity = () => {
     const candidate = PERSONA_POOL.find(persona => !agents.some(agent => agent.id === persona.id))
     if (!candidate) {
-      showToast('No more mock personas available.')
+      showToast(isChinese ? '没有更多可添加的模拟分身。' : 'No more mock personas available.')
       return null
     }
     const nextAgents = [...agents, candidate]
     setAgents(nextAgents)
     savePlanetMemberPersonas(planetConfig, nextAgents).catch(error => console.warn('Failed to save Planet members:', error))
-    showToast(`${candidate.name} joined the chat.`)
+    showToast(isChinese ? `${candidate.name} 已加入聊天。` : `${candidate.name} joined the chat.`)
     return candidate
   }
 
   const handleBirdAdmin = async (text) => {
     const adminIntent = /(推荐|找.*persona|人格|拉|加入|踢|删除|移除|改名|名称|背景|昵称|头像|member|add|remove|rename)/i.test(text)
     if (!adminIntent) {
-      await replyAsAgent(bird, 'I only handle admin tasks here. Ask me to find, add, remove, rename, or adjust the room.')
+      await replyAsAgent(bird, isChinese ? '我只处理这里的管理任务。你可以让我查找、添加、移除分身，或修改房间设置。' : 'I only handle admin tasks here. Ask me to find, add, remove, rename, or adjust the room.')
       return
     }
     if (/(推荐|找.*persona|人格)/i.test(text)) {
       const candidate = PERSONA_POOL.find(persona => !agents.some(agent => agent.id === persona.id))
-      await replyAsAgent(bird, candidate ? `This room has its core voices, but it could use ${candidate.name}: ${candidate.role}.` : 'All mock personas are already in this room.')
+      await replyAsAgent(bird, candidate ? (isChinese ? `这个房间已有核心声音，也可以加入 ${candidate.name}：${candidate.role}。` : `This room has its core voices, but it could use ${candidate.name}: ${candidate.role}.`) : (isChinese ? '所有模拟分身都已在这个房间中。' : 'All mock personas are already in this room.'))
       return
     }
     if (/(拉|加入|add)/i.test(text)) {
       const added = addPersonaFromCommunity()
-      await replyAsAgent(bird, added ? `Done. I added ${added.name}.` : 'No mock persona is available right now.')
+      await replyAsAgent(bird, added ? (isChinese ? `好了，我加入了 ${added.name}。` : `Done. I added ${added.name}.`) : (isChinese ? '目前没有可添加的模拟分身。' : 'No mock persona is available right now.'))
       return
     }
     if (/(踢|删除|移除|remove)/i.test(text)) {
@@ -347,17 +348,17 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
       if (!removed) return
       setAgents(prev => prev.slice(0, -1))
       if (activeAgentId === removed.id) setActiveAgentId(null)
-      await replyAsAgent(bird, `Done. I removed ${removed.name}.`)
+      await replyAsAgent(bird, isChinese ? `好了，我移除了 ${removed.name}。` : `Done. I removed ${removed.name}.`)
       return
     }
     if (/(改名|名称|rename)/i.test(text)) {
       setPlanet(prev => ({ ...prev, name: 'Soft Reset' }))
-      await replyAsAgent(bird, 'Done. I renamed this Planet.')
+      await replyAsAgent(bird, isChinese ? '好了，我重命名了这个星球。' : 'Done. I renamed this Planet.')
       return
     }
     if (/背景/i.test(text)) {
       setPlanet(prev => ({ ...prev, background: '#FFF8E7' }))
-      await replyAsAgent(bird, 'Done. I warmed up the background.')
+      await replyAsAgent(bird, isChinese ? '好了，我把背景调得更温暖了一些。' : 'Done. I warmed up the background.')
     }
   }
 
@@ -434,7 +435,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   }
 
   const saveSettings = () => {
-    const nextName = settingsDraft.name.trim() || 'Untitled Planet'
+    const nextName = settingsDraft.name.trim() || (isChinese ? '未命名星球' : 'Untitled Planet')
     savePlanetMeta(planet.id, { roomName: nextName, cardTitle: nextName })
     updateChirpPlanet(planet, { roomName: nextName }).catch(error => {
       console.warn('Failed to save Planet to Supabase:', error)
@@ -447,11 +448,11 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
     <div className="chirp-page" style={{ '--chirp-paper': planet.background }}>
       <div className="chirp-shell">
         <header className="chirp-topbar">
-          <button className="chirp-back" aria-label="Back" onClick={onBack}>
+          <button className="chirp-back" aria-label={isChinese ? '返回' : 'Back'} onClick={onBack}>
             <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
           </button>
           <button className="chirp-group-title" onClick={openSettings}><span>{planet.name} ({memberCount})</span></button>
-          <button className="chirp-more" onClick={openSettings} aria-label="Group settings">
+          <button className="chirp-more" onClick={openSettings} aria-label={isChinese ? '群聊设置' : 'Group settings'}>
             <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
           </button>
         </header>
@@ -459,14 +460,14 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
         <main className={`chirp-main ${settingsOpen ? 'settings-open' : ''}`}>
           <section className="chirp-chat">
             <div className="chirp-timeline" ref={timelineRef}>
-              <div className="chirp-date">Today {formatMessageTime(new Date())}</div>
-              {messages.map(message => <MessageBubble key={message.id} message={message} agents={agents} bird={bird} />)}
+              <div className="chirp-date">{isChinese ? '今天' : 'Today'} {formatMessageTime(new Date())}</div>
+              {messages.map(message => <MessageBubble key={message.id} message={message} agents={agents} bird={bird} language={language} />)}
               {typingAgentId && <TypingBubble agent={[...agents, bird].find(agent => agent.id === typingAgentId)} />}
             </div>
 
             <footer className="chirp-composer">
               <div className="chirp-input-row">
-                <button className="chirp-upload-button" type="button" aria-label="Upload image" onClick={() => fileInputRef.current?.click()}>+</button>
+                <button className="chirp-upload-button" type="button" aria-label={isChinese ? '上传图片' : 'Upload image'} onClick={() => fileInputRef.current?.click()}>+</button>
                 <input ref={fileInputRef} className="chirp-file-input" type="file" accept="image/*" onChange={handleUploadFile} />
                 <div className="chirp-input-shell">
                   <textarea
@@ -496,10 +497,10 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
                         setMentionOpen(false)
                       }
                     }}
-                    placeholder="@ to start a conversation"
+                    placeholder={isChinese ? '@ 开始对话' : '@ to start a conversation'}
                   />
                 </div>
-                <button className="chirp-send" onClick={handleSend} aria-label="Send">
+                <button className="chirp-send" onClick={handleSend} aria-label={isChinese ? '发送' : 'Send'}>
                   <svg viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>
                 </button>
                 {mentionOpen && filteredMentionItems.length > 0 && (
@@ -526,11 +527,11 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
             </footer>
           </section>
 
-          {settingsOpen && <button className="chirp-settings-scrim" type="button" aria-label="Close settings" onClick={closeSettings} />}
+          {settingsOpen && <button className="chirp-settings-scrim" type="button" aria-label={isChinese ? '关闭设置' : 'Close settings'} onClick={closeSettings} />}
 
           <aside className="chirp-settings">
             <div className="chirp-settings-head">
-              <button onClick={closeSettings} aria-label="Close settings">
+              <button onClick={closeSettings} aria-label={isChinese ? '关闭设置' : 'Close settings'}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
               </button>
             </div>
@@ -538,13 +539,13 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
             <section className="chirp-room-profile">
               <div className="chirp-room-profile-inner">
                 <div className="chirp-room-avatar"><RoomAvatar /></div>
-                <input className="chirp-room-name-input" value={settingsDraft.name} onChange={(event) => setSettingsDraft(prev => ({ ...prev, name: event.target.value }))} aria-label="Group name" />
+                <input className="chirp-room-name-input" value={settingsDraft.name} onChange={(event) => setSettingsDraft(prev => ({ ...prev, name: event.target.value }))} aria-label={isChinese ? '群聊名称' : 'Group name'} />
               </div>
             </section>
 
             <div className="chirp-settings-body">
               <section>
-                <h3>Members</h3>
+                <h3>{isChinese ? '成员' : 'Members'}</h3>
                 <div className="chirp-members-grid">
                   {visibleMembers.map(member => (
                     <div className="chirp-member" key={member.id}>
@@ -552,21 +553,21 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
                       <span>{member.name}</span>
                     </div>
                   ))}
-                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label="Add member"><b>+</b></button>
-                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label="Remove member"><b>-</b></button>
+                  <button className="chirp-member-action" onClick={addPersonaFromCommunity} aria-label={isChinese ? '添加成员' : 'Add member'}><b>+</b></button>
+                  <button className="chirp-member-action" onClick={() => agents[agents.length - 1] && removeAgent(agents[agents.length - 1].id)} aria-label={isChinese ? '移除成员' : 'Remove member'}><b>-</b></button>
                 </div>
               </section>
 
               <section>
-                <h3>Admin</h3>
+                <h3>{isChinese ? '管理员' : 'Admin'}</h3>
                 <div className="chirp-admin-card">
                   <div className="chirp-admin-avatar"><BIRD.avatar /></div>
-                  <div><strong>Bird</strong><p>Only replies when mentioned for admin tasks</p></div>
+                  <div><strong>Bird</strong><p>{isChinese ? '仅在被提及执行管理任务时回复' : 'Only replies when mentioned for admin tasks'}</p></div>
                 </div>
               </section>
 
               <section>
-                <h3>@all Order</h3>
+                <h3>{isChinese ? '@all 回复顺序' : '@all Order'}</h3>
                 <div className="chirp-agent-list">
                   {agents.map((agent, index) => (
                     <div className="chirp-agent-row" key={agent.id}>
@@ -582,7 +583,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
               </section>
             </div>
 
-            <div className="chirp-settings-footer"><button type="button" onClick={saveSettings}>Save</button></div>
+            <div className="chirp-settings-footer"><button type="button" onClick={saveSettings}>{isChinese ? '保存' : 'Save'}</button></div>
           </aside>
         </main>
         {toast && <div className="chirp-toast">{toast}</div>}
@@ -591,7 +592,7 @@ function ChirpPage({ planetConfig = CHIRP_PLANETS[0], onBack }) {
   )
 }
 
-function MessageBubble({ message, agents, bird }) {
+function MessageBubble({ message, agents, bird, language }) {
   if (message.type === 'system') return null
   if (message.type === 'memo') return <div className="chirp-message memo"><div className="chirp-bubble">{message.text}</div></div>
   if (message.type === 'user') {
@@ -600,7 +601,7 @@ function MessageBubble({ message, agents, bird }) {
         <div className="chirp-user-message-body">
           <div className="chirp-bubble">{message.text}</div>
           {!!message.tapbacks?.length && <div className="chirp-user-tapbacks">{message.tapbacks.map((tapback, index) => <span key={`${tapback}-${index}`}>{tapback}</span>)}</div>}
-          {message.read && <span className="chirp-read-receipt">{formatMessageTime(new Date(message.createdAt))} Read</span>}
+          {message.read && <span className="chirp-read-receipt">{formatMessageTime(new Date(message.createdAt))} {language === 'zh' ? '已读' : 'Read'}</span>}
         </div>
         <div className="chirp-user-side-avatar"><UserAvatar /></div>
       </div>

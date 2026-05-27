@@ -2,6 +2,14 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './LoginPage.css'
 
+const getAuthErrorMessage = (error, isSignUp) => {
+    const message = error?.message || 'Authentication failed. Please try again.'
+    if (isSignUp && /already|registered|exists|已注册/i.test(message)) {
+        return 'This email is already linked to an account. Sign in instead, or continue with the same Google account used before.'
+    }
+    return message
+}
+
 function LoginPage() {
     const [isSignUp, setIsSignUp] = useState(false)
     const [email, setEmail] = useState('')
@@ -19,7 +27,7 @@ function LoginPage() {
         try {
             await signInWithGoogle()
         } catch (err) {
-            setError(err.message)
+            setError(getAuthErrorMessage(err, false))
         }
     }
 
@@ -37,7 +45,7 @@ function LoginPage() {
                 await signInWithEmail(email, password)
             }
         } catch (err) {
-            setError(err.message)
+            setError(getAuthErrorMessage(err, isSignUp))
         } finally {
             setLoading(false)
         }

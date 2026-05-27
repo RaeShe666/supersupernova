@@ -50,7 +50,6 @@ export async function loadChirpProfile(user) {
     animal: data.animal,
     animalName: data.animal_name,
     birdName: data.bird_name || 'Bird',
-    mbti: data.mbti,
     focus: data.focus,
     completedAt: data.updated_at ? new Date(data.updated_at).getTime() : Date.now()
   }
@@ -63,7 +62,6 @@ export async function saveChirpProfile(user, profile) {
     animal: profile.animal,
     animal_name: profile.animalName,
     bird_name: profile.birdName || 'Bird',
-    mbti: profile.mbti || null,
     focus: profile.focus || null,
     updated_at: new Date().toISOString()
   }

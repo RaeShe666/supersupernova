@@ -167,6 +167,19 @@ const getPersonaThemeStyle = (persona) => {
 
 const DEFAULT_PERSONA_COLOR = '#DCC4EA'
 const PERSONA_AVATAR_COLORS = [DEFAULT_PERSONA_COLOR, '#EBA7B5', '#A9C9DF', '#A9CDA0', '#F5C878', '#F0A48A', '#9DC7B5']
+const PERSONA_DESCRIPTION_ZH = {
+  lovebrain: '温暖但敏锐的情绪雷达，帮助你读懂暧昧与不确定，而不是把每一次简短回复都判成结局。',
+  strategist: '拆分事实、假设、证据和下一步，适合需要理清关系或工作局面的时刻。',
+  owl: '一个更慢的声音，观察边界与节奏，也照顾那个在建议之前更需要一个问题的你。',
+  rabbit: '在你需要先安顿情绪、再分析发生了什么时，提供温柔的落点。'
+}
+
+const localizeActivityTime = (time, isChinese) => {
+  if (!isChinese) return time
+  if (time === 'Yesterday') return '昨天'
+  if (time === 'Today') return '今天'
+  return time
+}
 
 const getPersonaAvatarLabel = (name) => {
   const firstWord = name.trim().split(/\s+/)[0] || 'P'
@@ -175,67 +188,99 @@ const getPersonaAvatarLabel = (name) => {
 }
 
 export const CHIRP_PROFILE_KEY = 'chirpOnboardingProfile'
-const ONBOARDING_FLOW = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']
+const ASSESSMENT_FLOW = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']
+const ONBOARDING_FLOW = [...ASSESSMENT_FLOW, 'birdName']
 const ONBOARDING_SCORES = {
-  q1: [[-1, +1, +2, 0], [+1, -2, -1, +1], [-2, 0, -2, +1], [+2, +1, +1, -1]],
-  q2: [[-1, +2, +2, -1], [-2, +1, -1, +1], [-1, -2, -1, 0], [+2, +1, +1, +1]],
-  q4: [[0, -2, -2, 0], [-1, +1, -1, +2], [-1, +1, +2, -2], [+1, +2, +1, +1]],
-  q5: [[-1, -1, -2, -1], [-1, +1, +2, -1], [+1, 0, -1, +1], [0, -1, -2, +1]]
+  q1: [[-2, -1, +1, 0, +1], [+1, +2, +2, +1, 0], [-1, -2, +1, -1, +1], [+1, +1, 0, +2, -1]],
+  q2: [[-1, +1, +1, -1, +2], [+1, +2, +2, +1, 0], [-1, -1, -1, -2, +1], [0, 0, -1, +2, -1]],
+  q3: [[+1, +2, +2, +1, 0], [-1, -1, +2, 0, +1], [-2, -2, -1, -1, +1], [+1, +1, -1, +2, -1]],
+  q4: [[+1, +1, -1, +2, -2], [0, +2, 0, +1, 0], [-2, -1, -2, 0, 0], [-1, +1, +1, -1, +1]],
+  q5: [[+1, +1, -1, +2, -2], [-1, -1, 0, -2, +2], [0, 0, -1, +1, -1], [+1, +1, +2, -1, 0]],
+  q6: [[0, 0, -1, +1, -2], [0, -2, +1, -1, +1], [-1, +1, +1, -1, +2], [-1, -1, -1, -2, +1]]
 }
-const ONBOARDING_MAP = {
-  IRD: ['owl', 'snake'],
-  IRC: 'mouse',
-  IFD: ['fish', 'cat'],
-  IFC: 'rabbit',
-  ERD: 'fox',
-  ERC: 'wolf',
-  EFD: 'frog',
-  EFC: 'dog'
+const ONBOARDING_WEIGHTS = {
+  q1: [1, 0.25, 1, 0.25, 0.25],
+  q2: [0.25, 1, 0.25, 0.25, 0.65],
+  q3: [1, 0.65, 1, 0.25, 0.25],
+  q4: [0.25, 0.25, 0.65, 1, 0.25],
+  q5: [0.25, 0.25, 0.25, 1, 0.65],
+  q6: [0.25, 0.25, 0.25, 0.65, 1]
 }
+const ONBOARDING_RANGES = [[-5.25, 2.75], [-3.8, 4.8], [-3.05, 5.9], [-5.3, 6.15], [-4.95, 5.35]]
+const SCORE_EPSILON = 1e-9
 const ONBOARDING_ANIMALS = {
-  owl: { name: '猫头鹰', kw: '洞察 · 安静 · 慢说', desc: '你的沉默不是空的。\n里面装着的，比大多数人说出口的都多。', msg: '你说话之前，已经在心里过了三遍。\n别人以为你慢，其实你看得比谁都清楚。\n不急，我等你想好再说。' },
-  snake: { name: '小蛇', kw: '静观 · 精准 · 不动声色', desc: '你从不浪费一句话。\n等你开口的那一刻，全世界都该安静。', msg: '你不出声的时候，比谁都看得准。\n这种精准让人安心，也让人有点怕你。\n没关系，我不怕。' },
-  mouse: { name: '小鼠', kw: '谨慎 · 细致 · 备好一切', desc: '那些被所有人忽略的角落，\n你看见了，而且悄悄照亮了。', msg: '你默默备好了一切。\n别人没注意到的细节，你全看见了。\n这份周全，我记住了。' },
-  fish: { name: '小鱼', kw: '自由 · 不抓 · 随心', desc: '你天生知道什么时候该留、什么时候该走。\n这件事，大多数人一辈子学不会。', msg: '你天生不被绑住。\n心情来了游过去，不来了游开。\n这种自由，很多人学不会。' },
-  cat: { name: '猫', kw: '自我 · 选择性靠近 · 边界清', desc: '你的靠近是一份礼物。\n不是谁都配拆开的。', msg: '你不轻易靠近。\n但靠近了就是偏爱。\n能被你选中的人，应该知道这有多难得。' },
-  rabbit: { name: '小兔', kw: '敏感 · 温柔 · 心思重', desc: '你的柔软是一种勇敢。\n敢被世界碰疼，还敢先伸出手。', msg: '你心思很重，容易被一句话扎到。\n但你给出去的温柔，\n是最快让人放下防备的那种。' },
-  fox: { name: '狐狸', kw: '机敏 · 读空气 · 进退有度', desc: '你一秒看穿三层意思。\n只是偶尔，也允许自己看不透。', msg: '你脑子转得太快了。\n三层意思一秒读完。\n只是偶尔，别绕进自己的局里。' },
-  wolf: { name: '狼', kw: '深情 · 有原则 · 慢热', desc: '你的深情藏在原则里。\n被你认定的人，拥有了一座不会塌的山。', msg: '你不轻易跟随，也不轻易喜欢。\n但你一旦认定，底牌全掏出来。\n这种人，很少了。' },
-  frog: { name: '青蛙', kw: '不内耗 · 时机感 · 突然出动', desc: '所有人还在想要不要动的时候，\n你已经跳了。', msg: '你看着躺平，时机一到就跳。\n别人还在想要不要动，\n你已经在水里了。' },
-  dog: { name: '小狗', kw: '热烈 · 真诚 · 直接', desc: '你从不把喜欢藏起来。\n这世上最稀缺的不是聪明，是你这种真。', msg: '你的喜欢从来不藏着。\n赢过真心，也摔得痛过。\n但你好像从没想过收手——这很厉害。' }
+  cat: { name: '小猫', englishName: 'Cat', kw: '独立 · 自洽 · 边界感', traitsEn: 'Independent · Self-contained · Strong boundaries', msg: '你的精神世界是一座带院子的孤岛，自给自足，繁花似锦。低质量的社交远不如一个人发呆。你当然也需要拥抱，只是得在你刚好想被抱的那一分钟。', lineEn: 'Your inner world is a self-sufficient island with a little yard, blooming beautifully on its own. Low-quality company is far worse than being alone with your thoughts. You need hugs too, of course, but only in the exact minute you happen to want one.' },
+  dog: { name: '小狗', englishName: 'Dog', kw: '透明 · 热烈 · 冲在最前', traitsEn: 'Transparent · Passionate · Always first in line', msg: '你的人生没有“仅自己可见”，爱意和失落都像打着双闪的敞篷车一样招摇过市。真诚是你唯一的必杀技，虽然偶尔也会让自己受点内伤。', lineEn: 'You live with no "Only me" setting. Your love and heartbreak drive down the street in a convertible with the hazard lights flashing. Sincerity is your one unbeatable move, even when it leaves you a little bruised inside.' },
+  rabbit: { name: '小兔', englishName: 'Rabbit', kw: '细腻 · 共情 · 容易心软', traitsEn: 'Sensitive · Empathetic · Soft-hearted', msg: '你随身携带着一枚高精度的情绪雷达，空气里哪怕只有一丁点叹息你都能捕捉到。你不是总在想太多，只是很多人轻轻略过的东西，会认真落在你心上。', lineEn: 'You carry a high-precision emotional radar, catching even the faintest sigh in the air. You are not always overthinking; it is just that things other people brush past tend to land seriously in your heart.' },
+  owl: { name: '猫头鹰', englishName: 'Owl', kw: '通透 · 沉默 · 看得太清', traitsEn: 'Perceptive · Silent · Sees too clearly', msg: '别人在看戏，你已经看到了灯光背后的线和演员没有说出口的台词。你太容易把人性看透，以至于“难得糊涂”成了你这辈子最难修满学分的一门课。', lineEn: 'While others are watching the play, you have already noticed the wires behind the lights and the lines the actors never said aloud. You see through human nature so easily that "blissful ignorance" may be the hardest course you will ever try to pass.' },
+  octopus: { name: '章鱼', englishName: 'Octopus', kw: '嘴硬 · 别扭 · 口是心非', traitsEn: 'Tough-talking · Awkward · Says the opposite', msg: '你的表面是一层名为“关我屁事”的防弹玻璃，背后却在疯狂放烟花。口是心非是你最后的倔强，懂你的人自然知道怎么把那句“随便”翻译成“别走”。', lineEn: 'Your exterior is a sheet of bulletproof glass labeled "I don\'t care," while fireworks are going off furiously behind it. Saying the opposite is your last act of stubbornness; anyone who truly knows you can translate "whatever" into "don\'t go."' },
+  hedgehog: { name: '刺猬', englishName: 'Hedgehog', kw: '警觉 · 防御 · 外硬内软', traitsEn: 'Alert · Guarded · Hard outside, soft inside', msg: '你完美演绎了叔本华的刺猬困境：渴望取暖，又怕被扎伤。你竖起满身的尖刺，其实只是在笨拙地筛选那个不怕疼的人。一旦有人熬过了你别扭的试探期，你会向他亮出最柔软的底牌。', lineEn: 'You perfectly embody Schopenhauer\'s hedgehog dilemma: craving warmth, yet afraid of being pricked. You raise all your spines as a clumsy way of finding the person who is not afraid of a little pain. Once someone makes it through your awkward testing period, you will show them the softest card in your hand.' },
+  fish: { name: '小鱼', englishName: 'Fish', kw: '自由 · 直觉 · 不纠结', traitsEn: 'Free · Intuitive · Unburdened', msg: '你是这世上最纯粹的体验派。合则聚，不合则游走，在“绝不为难自己”这项现代人的终极哲学上，你绝对是个不用修行的顿悟大师。', lineEn: 'You are the purest kind of experientialist. If it flows, you stay; if it does not, you swim on. In the great modern philosophy of "never making life harder for yourself," you are already enlightened without ever having to practice.' },
+  fox: { name: '小狐狸', englishName: 'Fox', kw: '慢热 · 克制 · 死心塌地', traitsEn: 'Slow to warm · Restrained · Wholehearted once committed', msg: '你的偏爱很贵，从不轻易交付。你不相信速食的感情，只相信麦浪的颜色和日复一日建立的羁绊。一旦决定在谁身上倾注时间，ta就成了你在这世上的极致例外。', lineEn: 'Your favoritism is precious, and you never hand it over easily. You do not believe in fast-food affection; you believe in the color of wheat fields and bonds built day after day. Once you decide to pour your time into someone, they become your most extraordinary exception in this world.' },
+  frog: { name: '青蛙', englishName: 'Frog', kw: '佛系 · 行动派 · 不内耗', traitsEn: 'Easygoing · Action-first · Rarely spirals', msg: '精神状态常年稳定在“已出家”和“吃得挺好”之间。生活偶尔卡顿，关系偶尔掉线，但你很少愿意在原地把自己耗到没电。', lineEn: 'Your mental state stays somewhere between "I have renounced worldly concerns" and "honestly, I have been eating pretty well." Life may lag and relationships may briefly lose signal, but you are rarely willing to drain your battery by standing still.' },
+  lion: { name: '狮子', englishName: 'Lion', kw: '扛事 · 笃定 · 也想被接住', traitsEn: 'Dependable · Steady · Wants to be held too', msg: '大家习惯了天塌下来有你顶着，却忘了你也只是一副血肉之躯。你总在做那个给别人递伞的人；只是偶尔下大雨时，你也会想躲进谁的大衣里。', lineEn: 'Everyone is used to having you hold up the sky, and forgets that you are made of flesh and blood too. You are always the one handing umbrellas to other people; only sometimes, when the rain gets heavy, you want to hide inside someone else\'s coat.' },
+  snake: { name: '小蛇', englishName: 'Snake', kw: '耐心 · 精准 · 后发制人', traitsEn: 'Patient · Precise · Strikes last', msg: '你的沉默不是放空，而是在后台疯狂运行算力。草率出手是对你的侮辱，你只打有准备的算盘，一击必中，深藏功与名。', lineEn: 'Your silence is not emptiness; it is your processor running furiously in the background. Acting rashly would be an insult to your nature. You calculate only with preparation, strike cleanly once, and quietly disappear with the credit.' },
+  butterfly: { name: '蝴蝶', englishName: 'Butterfly', kw: '蜕变 · 断舍离 · 重启力强', traitsEn: 'Transformative · Lets go · Strong at starting again', msg: '你的人生是一场不断删除旧档、重塑真身的升级游戏。别人以为你在流浪，但你只是觉得，被装进罐子里的风景，怎么能叫春天？真的该走向下一站时，你通常比自己以为的更敢起飞。', lineEn: 'Your life is an upgrading game of deleting old saves and reshaping your truest form. Other people think you are wandering, but you simply believe that scenery trapped inside a jar cannot be called spring. When it is truly time to head toward the next stop, you are usually braver about taking flight than you realize.' },
+  elephant: { name: '大象', englishName: 'Elephant', kw: '念旧 · 重感情 · 过目不忘', traitsEn: 'Nostalgic · Sentimental · Remembers everything', msg: '你的脑海里有一座塞满票根、旧信和气味的私人博物馆。别人都在赶路，而你总是在原地的风里频频回头。深情有时是一笔厚重的资产，有时也是负债。', lineEn: 'You house a private museum of ticket stubs, old letters, and scents in your mind. While everyone else is rushing onward, you keep turning back in the wind where you once stood. Depth of feeling is sometimes a weighty asset, and sometimes a debt.' },
+  ostrich: { name: '鸵鸟', englishName: 'Ostrich', kw: '装没事 · 先躲一会儿 · 内心戏多', traitsEn: 'Acts fine · Hides for a while · A lot going on inside', msg: '战术性撤退是你维持内核稳定的法宝。外表像已经翻篇，心里其实还在循环播放；等那阵风没那么响了，你才会慢慢决定下一步怎么走。', lineEn: 'Tactical retreat is how you keep your inner core steady. On the outside, you look as though you have already turned the page; inside, the scene is still playing on repeat. Once the wind quiets down a little, you will slowly decide where to go next.' }
+}
+const ONBOARDING_PROTOTYPES = {
+  cat: [-2, -1, -2, 0, 0],
+  dog: [2, 2, 2, 2, 1],
+  rabbit: [-1, 1, 2, -2, 1],
+  owl: [-2, -1, 0, -2, 0],
+  octopus: [-1, -2, 1, 0, 1],
+  hedgehog: [-1, -1, 2, 0, 1],
+  fish: [0, 0, -2, 1, -2],
+  fox: [-1, -1, 1, -2, 2],
+  frog: [1, 0, -2, 2, -1],
+  lion: [1, -1.5, 2, 1, 1],
+  snake: [-2, -2, -2, -2, 2],
+  butterfly: [1, 1, 0, 2, -2],
+  elephant: [-1, 1, 2, -1, 2],
+  ostrich: [0, -2, 0, -2, 1]
 }
 const PLANET_PERSONALITY_MAP = {
-  love: { key: 'cat', animal: 'Cat', trait: 'selective closeness · clear boundaries' },
-  work: { key: 'owl', animal: 'Owl', trait: 'quiet insight · slow thinking · precise timing' },
-  self: { key: 'fish', animal: 'Fish', trait: 'fluid attention · freedom without being held' },
-  family: { key: 'rabbit', animal: 'Rabbit', trait: 'soft sensitivity · careful emotional reading' }
-}
-const ABOUT_ANIMAL_PROFILE = {
-  fox: {
-    name: 'Fox',
-    trait: 'quick read · social nuance · measured distance',
-    line: 'You read three layers of meaning in one second. Just remember: sometimes you are allowed not to solve the room.'
-  }
+  love: { key: 'cat', animal: 'Cat', trait: 'independent · self-contained · strong boundaries' },
+  work: { key: 'owl', animal: 'Owl', trait: 'perceptive · silent · sees too clearly' },
+  self: { key: 'fish', animal: 'Fish', trait: 'free · intuitive · unburdened' },
+  family: { key: 'rabbit', animal: 'Rabbit', trait: 'sensitive · empathetic · soft-hearted' }
 }
 const BIRD_DAILY_NOTES = [
   {
     id: 'note-1',
     date: 'Today',
+    dateZh: '今天',
     title: 'Quiet Proof',
-    text: 'Today you moved between wanting closeness and wanting quiet. That is not contradiction; it is your system asking for proof before it relaxes. When the room feels uncertain, you start reading tiny signals. I would not call that overthinking. I would call it a need for steadier evidence.'
+    titleZh: '安静的证据',
+    text: 'Today you moved between wanting closeness and wanting quiet. That is not contradiction; it is your system asking for proof before it relaxes. When the room feels uncertain, you start reading tiny signals. I would not call that overthinking. I would call it a need for steadier evidence.',
+    textZh: '今天你在想要靠近和想要安静之间来回移动。这不是矛盾，而是你的系统在放松之前需要证据。当气氛变得不确定，你会开始读取很小的信号。我不觉得这是想太多，而是你需要更稳定的确认。'
   },
   {
     id: 'note-2',
     date: 'Yesterday',
+    dateZh: '昨天',
     title: 'Third Sentence Truth',
-    text: 'You seem softer after you write things down. The first sentence is usually defensive, but by the third one you begin telling the truth. There is a pattern here: you do not need faster answers as much as you need a place where the answer can arrive without being rushed.'
+    titleZh: '第三句真话',
+    text: 'You seem softer after you write things down. The first sentence is usually defensive, but by the third one you begin telling the truth. There is a pattern here: you do not need faster answers as much as you need a place where the answer can arrive without being rushed.',
+    textZh: '你把事情写下来之后似乎会柔软一些。第一句话通常是在防御，但到第三句，你就开始讲真话了。这里有一个规律：比起更快的答案，你更需要一个答案可以不被催促、慢慢抵达的地方。'
   }
 ]
 const ONBOARDING_QUESTIONS = {
-  q1: { label: '1 / 7', text: <>你在一段熟悉的关系里，<br />更接近哪个？</>, options: ['听的人——对方说，我接住', '带节奏的人——去哪吃什么我来安排', '偶尔消失的人——突然就想自己待一会儿', '主动的人——我不找，怕就断了'] },
-  q2: { label: '2 / 7', text: <>深夜 emo 的时候，<br />你更可能在干嘛？</>, options: ['反复刷某个人的朋友圈或聊天记录', '裹在被子里发呆，或者哭一场', '打开备忘录写点什么，把脑子理一理', '找个人说话，或刷点搞笑视频别再想了'] },
-  q4: { label: '4 / 7', text: <>心里闷闷的、又说不清到底怎么了的时候，<br />你一般？</>, options: ['找点事做——忙起来就顾不上想了', '什么都不干，允许自己瘫一天', '在脑子里翻来覆去想，想找到那个“点”', '想跟人待着，哪怕不聊这件事'] },
-  q5: { label: '5 / 7', text: '你最近最常对自己说的一句话是？', options: ['“再忍忍就好了”', '“我又想多了”', '“去他的，不管了”', '“不可控的，放一边”'] }
+  q1: { label: '1 / 7', text: <>在一段关系里（恋人或挚友），<br />哪个瞬间会让你觉得被好好接住了？</>, options: ['绝对的默契与留白。各做各的事，不说话也不会尴尬', '明目张胆的偏爱。在人群中毫不犹豫走向我，把我放在第一位', '看破不说破的温柔。看穿我的口是心非，护住我的自尊', '不扫兴的同频。我抛出点子，对方二话不说拉着我就去疯'] },
+  q2: { label: '2 / 7', text: '深夜 emo 的时候，你是哪种？', options: ['翻聊天记录，反复回忆某个人、某段过去的关系', '找亲近的人倒苦水，或发一条分组动态', '打开备忘录疯狂复盘，理清底层的逻辑', '立马刷视频或直接闭眼睡觉，绝不跟烂情绪内耗'] },
+  q3: { label: '3 / 7', text: <>当你真的在意一个人时，<br />你的“在意”通常更像哪一种？</>, options: ['让 ta 知道。挂念、欣赏、偏爱，能说出口的不太藏', '默默记住 ta 的小事；只要需要，我就在', '先把在意放在心里，慢慢观察，确认值得后才向前一步', '把 ta 拉进我的日常：分享有意思的东西，约见面'] },
+  q4: { label: '4 / 7', text: <>抛开偶尔的自我怀疑，<br />你觉得自己身上最珍贵的光芒是什么？</>, options: ['无论生活怎么锤我，我永远有推翻一切、一秒翻篇的洒脱', '看透生活的复杂，但还是愿意一腔孤勇地做个真诚的人', '极度清醒也极度独立，一个人就能把日子过成繁花似锦', '哪怕世界再粗糙，我依然能捕捉到微小的细节与美好'] },
+  q5: { label: '5 / 7', text: <>面对充满极大不确定性的未来，<br />你会？</>, options: ['兴奋多过焦虑，未知意味着什么都有可能', '焦虑到失眠，脑子里反复推演每一种可能', '先不想了，过好今天再说', '去找经历过的人聊聊，别人的路能照亮我的'] },
+  q6: { label: '6 / 7', text: <>面对一段没有好好告别、<br />戛然而止的经历，你会如何安置它？</>, options: ['物理清退，全盘删除。没有结果的事，不值得再浪费精力', '表面刀枪不入，其实一碰还是会疼', '时不时在回忆里回头看，深情且认命', '疯狂复盘，只有彻底剖析透了底层逻辑，才能翻篇'] }
+}
+const ONBOARDING_QUESTIONS_EN = {
+  q1: { label: '1 / 7', text: <>In a relationship, with a partner or close friend,<br />which moment makes you feel truly held?</>, options: ['An effortless understanding with room for silence. We can do our own things without awkwardness.', 'Open preference. In a crowd, they walk straight to me and put me first.', 'A considerate kind of insight. They see through my deflection while protecting my pride.', 'Shared spontaneity. I suggest something and they immediately come along for the ride.'] },
+  q2: { label: '2 / 7', text: 'When emotions hit late at night, which one are you?', options: ['I reread chats and revisit a person or a relationship from the past.', 'I talk to someone close, or post something to a selected group.', 'I open my notes and analyze everything until the logic is clear.', 'I watch videos or go straight to sleep. I refuse to drain myself over bad feelings.'] },
+  q3: { label: '3 / 7', text: <>When you genuinely care about someone,<br />what does your caring usually look like?</>, options: ['I let them know. Missing them, admiring them and choosing them are not things I hide.', 'I quietly remember the small things; when they need me, I am there.', 'I keep it in my heart first, observe slowly, then step forward once it feels worth it.', 'I bring them into my daily life: sharing interesting things and making plans to meet.'] },
+  q4: { label: '4 / 7', text: <>Putting occasional self-doubt aside,<br />what is the most precious light in you?</>, options: ['No matter what life throws at me, I can overturn it and turn the page in a second.', 'I see the complexity of life clearly, yet still choose to be sincere.', 'I am clear-eyed and independent enough to make life bloom on my own.', 'Even when the world is rough, I can still notice small details and beauty.'] },
+  q5: { label: '5 / 7', text: <>When facing a future full of uncertainty,<br />what do you do?</>, options: ['I feel more excitement than anxiety; the unknown means anything is possible.', 'I get anxious enough to lose sleep, repeatedly simulating every possibility.', 'I stop thinking about it for now and focus on living today well.', 'I talk to people who have been through it; their path may light mine.'] },
+  q6: { label: '6 / 7', text: <>When an experience ends abruptly<br />without a real goodbye, where do you put it?</>, options: ['I clear it out completely. Things without a result do not deserve more energy.', 'I look invulnerable on the surface, but it still hurts when touched.', 'I turn back to it in memory from time to time, deeply attached and accepting.', 'I analyze it relentlessly; only understanding the underlying logic lets me turn the page.'] }
 }
 export const readOnboardingProfile = () => {
   if (typeof window === 'undefined') return null
@@ -247,27 +292,39 @@ export const readOnboardingProfile = () => {
 }
 
 const saveOnboardingProfile = (profile) => {
-  window.localStorage.setItem(CHIRP_PROFILE_KEY, JSON.stringify(profile))
+  if (profile) {
+    window.localStorage.setItem(CHIRP_PROFILE_KEY, JSON.stringify(profile))
+  } else {
+    window.localStorage.removeItem(CHIRP_PROFILE_KEY)
+  }
   window.dispatchEvent(new CustomEvent('chirp:onboarding-updated', { detail: profile }))
 }
 
 const calculateOnboardingAnimal = (answers) => {
-  let ie = 0
-  let rf = 0
-  let dc = 0
-  let ts = 0
-  ;['q1', 'q2', 'q4', 'q5'].forEach(q => {
-    if (answers[q] !== undefined) {
-      const score = ONBOARDING_SCORES[q][answers[q]]
-      ie += score[0]
-      rf += score[1]
-      dc += score[2]
-      ts += score[3]
-    }
+  const raw = [0, 0, 0, 0, 0]
+  Object.keys(ONBOARDING_SCORES).forEach(question => {
+    const selected = answers[question]
+    if (selected === undefined) return
+    ONBOARDING_SCORES[question][selected].forEach((score, dimension) => {
+      raw[dimension] += score * ONBOARDING_WEIGHTS[question][dimension]
+    })
   })
-  const key = `${ie > 0 ? 'E' : 'I'}${rf > 0 ? 'F' : 'R'}${dc > 0 ? 'C' : 'D'}`
-  const mapped = ONBOARDING_MAP[key]
-  return Array.isArray(mapped) ? (ts > 0 ? mapped[0] : mapped[1]) : mapped
+  const normalized = raw.map((value, dimension) => {
+    const [minimum, maximum] = ONBOARDING_RANGES[dimension]
+    return ((value - minimum) / (maximum - minimum)) * 4 - 2
+  })
+  const distance = prototype => Math.sqrt(prototype.reduce((total, value, dimension) => total + ((normalized[dimension] - value) ** 2), 0))
+  return Object.keys(ONBOARDING_PROTOTYPES).reduce((winner, candidate) => {
+    if (!winner) return candidate
+    const winnerDistance = distance(ONBOARDING_PROTOTYPES[winner])
+    const candidateDistance = distance(ONBOARDING_PROTOTYPES[candidate])
+    if (candidateDistance < winnerDistance - SCORE_EPSILON) return candidate
+    if (Math.abs(candidateDistance - winnerDistance) > SCORE_EPSILON) return winner
+    const greatestDifference = ONBOARDING_PROTOTYPES[candidate].reduce((selected, value, dimension) => (
+      Math.abs(value - ONBOARDING_PROTOTYPES[winner][dimension]) > Math.abs(ONBOARDING_PROTOTYPES[candidate][selected] - ONBOARDING_PROTOTYPES[winner][selected]) ? dimension : selected
+    ), 0)
+    return Math.abs(normalized[greatestDifference] - ONBOARDING_PROTOTYPES[candidate][greatestDifference]) < Math.abs(normalized[greatestDifference] - ONBOARDING_PROTOTYPES[winner][greatestDifference]) ? candidate : winner
+  }, null)
 }
 
 const OnboardingBird = () => <HomeBird />
@@ -292,8 +349,9 @@ const truncateWords = (text, limit = 32) => {
   return `${words.slice(0, limit).join(' ')}...`
 }
 
-function ChirpHomePage({ page, id }) {
-  const { user, getAccessToken } = useAuth()
+function ChirpHomePage({ page, id, language = 'en' }) {
+  const { user } = useAuth()
+  const isChinese = language === 'zh'
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerMode, setDrawerMode] = useState('menu')
   const [drawerWidth, setDrawerWidth] = useState(DRAWER_DEFAULT_WIDTH)
@@ -302,6 +360,7 @@ function ChirpHomePage({ page, id }) {
   const [personas, setPersonas] = useState(() => getAllPersonas())
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [chirpProfile, setChirpProfile] = useState(() => readOnboardingProfile())
+  const [profileResolved, setProfileResolved] = useState(false)
   const selectedPlanet = useMemo(() => {
     if (page !== 'planet') return null
     return planets.find(planet => planet.id === id || planet.dbId === id) || getPlanetById(id)
@@ -371,19 +430,38 @@ function ChirpHomePage({ page, id }) {
   useEffect(() => {
     let cancelled = false
 
-    const loadRemoteChirp = async () => {
-      if (!user) return
+    const loadRemoteProfile = async () => {
+      setProfileResolved(false)
+      if (!user) {
+        saveOnboardingProfile(null)
+        setChirpProfile(null)
+        setOnboardingOpen(false)
+        return
+      }
       try {
-        const [remoteProfile, remotePlanets, remoteCustomPersonas] = await Promise.all([
-          loadChirpProfile(user),
-          loadChirpPlanets(user),
-          loadCustomPersonas(user)
-        ])
+        const remoteProfile = await loadChirpProfile(user)
         if (cancelled) return
         if (remoteProfile) {
           saveOnboardingProfile(remoteProfile)
           setChirpProfile(remoteProfile)
+        } else {
+          saveOnboardingProfile(null)
+          setChirpProfile(null)
         }
+        setProfileResolved(true)
+      } catch (error) {
+        console.warn('Failed to load Chirp profile from Supabase:', error)
+      }
+    }
+
+    const loadRemoteContent = async () => {
+      if (!user) return
+      try {
+        const [remotePlanets, remoteCustomPersonas] = await Promise.all([
+          loadChirpPlanets(user),
+          loadCustomPersonas(user)
+        ])
+        if (cancelled) return
         setPlanets(remotePlanets)
         setPersonas([...getAllPersonas(), ...remoteCustomPersonas])
         const remoteActivity = await loadPlanetActivityFromMessages(remotePlanets)
@@ -393,16 +471,17 @@ function ChirpHomePage({ page, id }) {
       }
     }
 
-    loadRemoteChirp()
+    loadRemoteProfile()
+    loadRemoteContent()
     return () => {
       cancelled = true
     }
   }, [user])
 
   useEffect(() => {
-    if (page || chirpProfile) return
+    if (!user || !profileResolved || page || chirpProfile) return
     setOnboardingOpen(true)
-  }, [page, chirpProfile])
+  }, [user, page, chirpProfile, profileResolved])
 
   const completeOnboarding = async (profile) => {
     saveOnboardingProfile(profile)
@@ -421,9 +500,9 @@ function ChirpHomePage({ page, id }) {
   if (selectedPlanet) {
     return (
       <div className="chirp-home-detail">
-        <ChirpPage planetConfig={selectedPlanet} onBack={openPlanetDrawer} />
-        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
-        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
+        <ChirpPage planetConfig={selectedPlanet} onBack={openPlanetDrawer} language={language} />
+        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} language={language} />
+        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} language={language} />}
       </div>
     )
   }
@@ -431,12 +510,12 @@ function ChirpHomePage({ page, id }) {
   if (page === 'persona') {
     return (
       <div className="chirp-home-page">
-        <PersonaPage personas={personas} planets={planets} user={user} onPersonasChange={async () => {
+        <PersonaPage personas={personas} planets={planets} user={user} language={language} onPersonasChange={async () => {
           const remoteCustomPersonas = user ? await loadCustomPersonas(user).catch(() => []) : []
           setPersonas([...getAllPersonas(), ...remoteCustomPersonas])
         }} />
-        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
-        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
+        <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} language={language} />
+        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} language={language} />}
       </div>
     )
   }
@@ -444,17 +523,8 @@ function ChirpHomePage({ page, id }) {
   if (page === 'about-me') {
     return (
       <div className="chirp-home-page">
-        <AboutMePage chirpProfile={chirpProfile} planets={planets} />
-        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
-      </div>
-    )
-  }
-
-  if (page === 'moments') {
-    return (
-      <div className="chirp-home-page">
-        <MomentsPage user={user} getAccessToken={getAccessToken} planets={planets} />
-        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
+        <AboutMePage chirpProfile={chirpProfile} planets={planets} onRetake={() => setOnboardingOpen(true)} language={language} />
+        {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} existingProfile={chirpProfile} language={language} />}
       </div>
     )
   }
@@ -468,65 +538,40 @@ function ChirpHomePage({ page, id }) {
             <div className="bird-text">
               <div className="bird-name">{chirpProfile?.birdName || 'Bird'} · 07:42</div>
               <div className="bird-msg">
-                Morning, Goldie — last night in <em role="button" tabIndex="0" onClick={() => navigateTo('chirp', 'planet', 'love')} onKeyDown={(event) => event.key === 'Enter' && navigateTo('chirp', 'planet', 'love')}>my crush...</em> you wrote "never mind, let it go." That softness shows up a lot this week.
+                {isChinese ? <>早安，Goldie。昨晚你在 <em role="button" tabIndex="0" onClick={() => navigateTo('chirp', 'planet', 'love')} onKeyDown={(event) => event.key === 'Enter' && navigateTo('chirp', 'planet', 'love')}>my crush...</em> 写道："never mind, let it go." 这周你经常这样心软。</> : <>Morning, Goldie. Last night in <em role="button" tabIndex="0" onClick={() => navigateTo('chirp', 'planet', 'love')} onKeyDown={(event) => event.key === 'Enter' && navigateTo('chirp', 'planet', 'love')}>my crush...</em> you wrote "never mind, let it go." That softness shows up a lot this week.</>}
               </div>
             </div>
-            <button className="chirp-test-button" type="button" onClick={() => setOnboardingOpen(true)}>Chat</button>
+            <button className="chirp-test-button" type="button" onClick={() => navigateTo('chirp', 'planet', 'love')}>{isChinese ? '聊天' : 'Chat'}</button>
           </div>
         </div>
 
-        <div className="sec-label">My Planets</div>
+        <div className="sec-label">{isChinese ? '我的星球' : 'My Planets'}</div>
         <div className="planets-grid">
           {planets.map((planet) => (
-            <PlanetCard key={planet.id} planet={planet} recent={recentFor(planet)} />
+            <PlanetCard key={planet.id} planet={planet} recent={recentFor(planet)} language={language} />
           ))}
 
           <button className="planet-card pc-create" type="button">
             <div className="pc-create-illu"><CreatePlanetIcon /></div>
-            <div className="pc-create-title">My Planet</div>
-            <div className="pc-create-desc">Name it. Color it. Make it yours.</div>
-            <span className="pc-create-btn"><span className="ic">+</span>CREATE</span>
+            <div className="pc-create-title">{isChinese ? '我的星球' : 'My Planet'}</div>
+            <div className="pc-create-desc">{isChinese ? '给它取名、配色，把它变成你的空间。' : 'Name it. Color it. Make it yours.'}</div>
+            <span className="pc-create-btn"><span className="ic">+</span>{isChinese ? '创建' : 'CREATE'}</span>
           </button>
         </div>
 
-        <div className="sec-label moments-label">Moments</div>
-        <div className="moments-card">
-          <div className="moments-row">
-            <div className="moments-body">
-              <div className="moment-themes">
-                <div className="moment-theme">
-                  <div className="mt-label"><span className="mt-dot"></span>Private</div>
-                  <div className="mt-text zh" lang="zh">路过咖啡店，猫在晒太阳，眼睛眯起来。我也想被那样晒...</div>
-                  <div className="mt-date">Last night · May 15</div>
-                </div>
-                <div className="moment-theme">
-                  <div className="mt-label shared"><span className="mt-dot"></span>Shared · with M.</div>
-                  <div className="mt-text">Fourth draft of the deck. Reads steadier...</div>
-                  <div className="mt-date">Today · May 16</div>
-                </div>
-              </div>
-
-              <div className="moments-cta-row">
-                <button className="moments-cta" type="button">
-                  <span className="moments-cta-icon"><BrushIcon /></span>
-                  Write
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </main>
 
-      <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} />
-      {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} />}
+      <SideDrawer open={drawerOpen} mode={drawerMode} setMode={setDrawerMode} onClose={() => setDrawerOpen(false)} recentFor={recentFor} planets={planets} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} language={language} />
+      {onboardingOpen && <ChirpOnboarding onComplete={completeOnboarding} language={language} />}
     </div>
   )
 }
 
-function AboutMePage({ chirpProfile, planets }) {
+function AboutMePage({ chirpProfile, planets, onRetake, language }) {
   const [expandedNoteId, setExpandedNoteId] = useState(null)
-  const animalKey = 'fox'
-  const animal = ABOUT_ANIMAL_PROFILE[animalKey]
+  const isChinese = language === 'zh'
+  const animalKey = ONBOARDING_ANIMALS[chirpProfile?.animal] ? chirpProfile.animal : 'cat'
+  const animal = ONBOARDING_ANIMALS[animalKey]
   const birdName = chirpProfile?.birdName && chirpProfile.birdName !== 'Bird' ? chirpProfile.birdName : '小草'
 
   return (
@@ -537,25 +582,27 @@ function AboutMePage({ chirpProfile, planets }) {
             <OnboardingAnimalAvatar animal={animalKey} />
           </div>
           <div className="about-profile-copy">
-            <h1>{animal.name}</h1>
-            <div className="about-profile-traits">{animal.trait}</div>
+            <h1>{isChinese ? animal.name : animal.englishName}</h1>
+            <div className="about-profile-traits">{isChinese ? animal.kw : animal.traitsEn}</div>
           </div>
+          <button className="about-retake-button" type="button" onClick={onRetake}>{isChinese ? '重新测试' : 'Retake Test'}</button>
         </div>
         <div className="about-profile-line">
-          <p>{animal.line}</p>
+          <p>{isChinese ? animal.msg : animal.lineEn}</p>
         </div>
       </section>
 
       <section className="chirp-about-insights">
         <div className="about-section-head">
           <div>
-            <div className="sec-label">{birdName}'s Planet Findings</div>
+            <div className="sec-label">{isChinese ? `${birdName} 的星球观察` : `${birdName}'s Planet Findings`}</div>
           </div>
         </div>
 
         <div className="about-planet-types">
           {planets.map(planet => {
-            const personality = PLANET_PERSONALITY_MAP[planet.id] || { key: 'fox', animal: 'Fox', trait: 'quick read · social nuance · measured distance' }
+            const personality = PLANET_PERSONALITY_MAP[planet.id] || { key: 'fox', animal: 'Fox', trait: 'slow to warm · restrained · wholehearted once committed' }
+            const personalityAnimal = ONBOARDING_ANIMALS[personality.key]
             return (
               <article className="about-planet-type" key={planet.id} style={{ '--planet-color': planet.color }}>
                 <span>{getPlanetCardTitle(planet)}</span>
@@ -563,9 +610,9 @@ function AboutMePage({ chirpProfile, planets }) {
                   <span className="about-planet-animal-avatar">
                     <OnboardingAnimalAvatar animal={personality.key} />
                   </span>
-                  <strong>{personality.animal}</strong>
+                  <strong>{isChinese ? personalityAnimal.name : personality.animal}</strong>
                 </div>
-                <p>{personality.trait}</p>
+                <p>{isChinese ? personalityAnimal.kw : personality.trait}</p>
               </article>
             )
           })}
@@ -574,7 +621,7 @@ function AboutMePage({ chirpProfile, planets }) {
         <div className="about-notes-block">
           <div className="about-section-head compact">
             <div>
-              <div className="sec-label">{birdName} Notes</div>
+              <div className="sec-label">{isChinese ? `${birdName} 的笔记` : `${birdName} Notes`}</div>
             </div>
           </div>
           <div className="about-notes-list">
@@ -583,10 +630,10 @@ function AboutMePage({ chirpProfile, planets }) {
               return (
                 <button className={`about-note ${expanded ? 'expanded' : ''}`} type="button" key={note.id} onClick={() => setExpandedNoteId(expanded ? null : note.id)}>
                   <div className="about-note-meta">
-                    <span>{note.date}</span>
-                    <strong>{note.title}</strong>
+                    <span>{isChinese ? note.dateZh : note.date}</span>
+                    <strong>{isChinese ? note.titleZh : note.title}</strong>
                   </div>
-                  <p>{expanded ? note.text : truncateWords(note.text, 28)}</p>
+                  <p>{expanded ? (isChinese ? note.textZh : note.text) : truncateWords(isChinese ? note.textZh : note.text, 28)}</p>
                 </button>
               )
             })}
@@ -1135,30 +1182,34 @@ function MomentsPage({ user, getAccessToken, planets }) {
   )
 }
 
-function ChirpOnboarding({ onComplete }) {
+function ChirpOnboarding({ onComplete, existingProfile, language }) {
   const [screen, setScreen] = useState('intro')
   const [answers, setAnswers] = useState({})
-  const [mbti, setMbti] = useState('')
-  const [mbtiSkipped, setMbtiSkipped] = useState(false)
   const [thing, setThing] = useState('')
+  const [ownLight, setOwnLight] = useState('')
   const [birdName, setBirdName] = useState('')
   const [resultAnimal, setResultAnimal] = useState(null)
 
-  const qIndex = ONBOARDING_FLOW.indexOf(screen)
-  const progress = qIndex >= 0 ? `${((qIndex + 1) / ONBOARDING_FLOW.length) * 100}%` : '0%'
-  const isQuestion = qIndex >= 0
+  const qIndex = ASSESSMENT_FLOW.indexOf(screen)
+  const progress = qIndex >= 0 ? `${((qIndex + 1) / ASSESSMENT_FLOW.length) * 100}%` : '0%'
+  const isQuestion = ONBOARDING_FLOW.includes(screen)
+  const showProgress = qIndex >= 0
   const result = resultAnimal ? ONBOARDING_ANIMALS[resultAnimal] : null
-
-  const canGoNext = () => {
-    if (['q1', 'q2', 'q4', 'q5'].includes(screen)) return answers[screen] !== undefined
-    if (screen === 'q3') return mbtiSkipped || /^[EI][SN][TF][JP]$/i.test(mbti.trim())
-    if (screen === 'q6') return thing.trim()
-    if (screen === 'q7') return birdName.trim()
-    return true
-  }
+  const isRetake = Boolean(existingProfile?.animal)
+  const isChinese = language === 'zh'
+  const questions = isChinese ? ONBOARDING_QUESTIONS : ONBOARDING_QUESTIONS_EN
 
   const goNext = () => {
     const index = ONBOARDING_FLOW.indexOf(screen)
+    if (screen === 'q7' && isRetake) {
+      setScreen('loading')
+      window.setTimeout(() => {
+        const animal = calculateOnboardingAnimal(answers)
+        setResultAnimal(animal)
+        setScreen('result')
+      }, 2200)
+      return
+    }
     if (index < ONBOARDING_FLOW.length - 1) {
       setScreen(ONBOARDING_FLOW[index + 1])
       return
@@ -1176,120 +1227,125 @@ function ChirpOnboarding({ onComplete }) {
     setScreen(index <= 0 ? 'intro' : ONBOARDING_FLOW[index - 1])
   }
 
+  const chooseAnswer = (questionId, answerIndex) => {
+    setAnswers(prev => ({ ...prev, [questionId]: answerIndex }))
+    const nextIndex = ONBOARDING_FLOW.indexOf(questionId) + 1
+    setScreen(ONBOARDING_FLOW[nextIndex])
+  }
+
+  const submitInputStep = (event) => {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+    const hasValue = screen === 'q7' ? thing.trim() : birdName.trim()
+    if (!hasValue) return
+    event.preventDefault()
+    goNext()
+  }
+
   const finish = () => {
     const animal = resultAnimal || calculateOnboardingAnimal(answers)
     onComplete({
       animal,
-      animalName: ONBOARDING_ANIMALS[animal]?.name || '猫',
-      birdName: birdName.trim() || 'bird',
-      mbti: mbtiSkipped ? null : mbti.trim().toUpperCase(),
+      animalName: ONBOARDING_ANIMALS[animal]?.name || '小猫',
+      birdName: existingProfile?.birdName || birdName.trim() || 'bird',
       focus: thing.trim(),
+      ownLight: ownLight.trim() || null,
       completedAt: Date.now()
     })
   }
 
   return (
     <div className="chirp-onboarding">
-      <div className={`chirp-onboarding-progress ${isQuestion ? 'show' : ''}`}>
+      <div className={`chirp-onboarding-progress ${showProgress ? 'show' : ''}`}>
         <div style={{ width: progress }} />
       </div>
 
       <section className={`chirp-ob-screen ${screen === 'intro' ? 'active' : ''}`}>
         <div className="chirp-ob-bird"><OnboardingBird /></div>
         <div className="chirp-ob-greeting chirp-ob-intro-copy">
-          在你开始之前，<br />
-          能让我先认识你一下吗？<br />
-          几个小问题，很快的。
+          {isChinese ? <><span>在你开始之前，</span><br /><span>能让我先认识你一下吗？</span><br /><span>几个小问题，很快的。</span></> : <><span>Before you start,</span><br /><span>may I get to know you first?</span><br /><span>Just a few quick questions.</span></>}
         </div>
-        <button className="chirp-ob-primary" type="button" onClick={() => setScreen('q1')}>好啊</button>
+        <button className="chirp-ob-primary" type="button" onClick={() => setScreen('q1')}>{isChinese ? '好啊' : 'Sure'}</button>
       </section>
 
-      {['q1', 'q2', 'q4', 'q5'].map(qId => {
-        const q = ONBOARDING_QUESTIONS[qId]
+      {Object.keys(questions).map(qId => {
+        const q = questions[qId]
         return (
-          <section className={`chirp-ob-screen ${screen === qId ? 'active' : ''}`} key={qId}>
+          <section className={`chirp-ob-screen chirp-ob-question-screen ${screen === qId ? 'active' : ''}`} key={qId}>
             <div className="chirp-ob-q-label">{q.label}</div>
             <div className="chirp-ob-q-text">{q.text}</div>
             <div className="chirp-ob-options">
               {q.options.map((option, index) => (
-                <button className={`chirp-ob-option ${answers[qId] === index ? 'selected' : ''}`} type="button" key={option} onClick={() => setAnswers(prev => ({ ...prev, [qId]: index }))}>
+                <button className={`chirp-ob-option ${answers[qId] === index ? 'selected' : ''}`} type="button" key={option} onClick={() => chooseAnswer(qId, index)}>
                   {option}
                 </button>
               ))}
             </div>
+            {qId === 'q4' && (
+              <div className="chirp-ob-input-wrap">
+                <input className="chirp-ob-input" value={ownLight} onChange={(event) => setOwnLight(event.target.value)} placeholder={isChinese ? '其他（可选）' : 'Other (optional)'} />
+              </div>
+            )}
           </section>
         )
       })}
 
-      <section className={`chirp-ob-screen ${screen === 'q3' ? 'active' : ''}`}>
-        <div className="chirp-ob-q-label">3 / 7</div>
-        <div className="chirp-ob-q-text">你的 MBTI 是？</div>
-        <div className="chirp-ob-input-wrap">
-          <input className="chirp-ob-input chirp-ob-mbti" value={mbti} maxLength="4" onChange={(event) => { setMbti(event.target.value.toUpperCase()); setMbtiSkipped(false) }} autoComplete="off" spellCheck="false" />
-          <div className="chirp-ob-input-hint">{mbti.length >= 4 && !/^[EI][SN][TF][JP]$/i.test(mbti) ? '格式不太对，试试像 INFJ 这样。' : ''}</div>
-        </div>
-        <div className="chirp-ob-options skip">
-          <button className={`chirp-ob-option ${mbtiSkipped ? 'selected' : ''}`} type="button" onClick={() => { setMbti(''); setMbtiSkipped(true) }}>没测过</button>
-        </div>
-      </section>
-
-      <section className={`chirp-ob-screen ${screen === 'q6' ? 'active' : ''}`}>
-        <div className="chirp-ob-q-label">6 / 7</div>
-        <div className="chirp-ob-q-text">最近占满你脑子的两件事是？</div>
-        <div className="chirp-ob-input-wrap">
-          <input className="chirp-ob-input" value={thing} onChange={(event) => setThing(event.target.value)} />
-          <div className="chirp-ob-input-hint">关键词就行，比如“跳槽、和他的关系”</div>
-        </div>
-      </section>
-
-      <section className={`chirp-ob-screen ${screen === 'q7' ? 'active' : ''}`}>
+      <section className={`chirp-ob-screen chirp-ob-question-screen ${screen === 'q7' ? 'active' : ''}`}>
         <div className="chirp-ob-q-label">7 / 7</div>
-        <div className="chirp-ob-q-text">最后！<br />为我取个帅翻宇宙的名字吧——<br />以后我就只认你叫的这个了</div>
+        <div className="chirp-ob-q-text">{isChinese ? '最近占满你脑子的两件事是？' : 'What are two things taking up most of your mind lately?'}</div>
         <div className="chirp-ob-input-wrap">
-          <input className="chirp-ob-input chirp-ob-name-input" value={birdName} onChange={(event) => setBirdName(event.target.value)} autoComplete="off" />
+          <input className="chirp-ob-input" value={thing} onChange={(event) => setThing(event.target.value)} onKeyDown={submitInputStep} />
+          <div className="chirp-ob-input-hint">{isChinese ? '关键词就行，比如“跳槽、和他的关系”' : 'Keywords are enough, for example: career change, our relationship'}</div>
+        </div>
+      </section>
+
+      <section className={`chirp-ob-screen ${screen === 'birdName' ? 'active' : ''}`}>
+        <div className="chirp-ob-q-text">{isChinese ? <>最后！<br />为我取个帅翻宇宙的名字吧——<br />以后我就只认你叫的这个了</> : <>One last thing!<br />Give me a name that feels completely yours.<br />From now on, that is what I will answer to.</>}</div>
+        <div className="chirp-ob-input-wrap">
+          <input className="chirp-ob-input chirp-ob-name-input" value={birdName} onChange={(event) => setBirdName(event.target.value)} onKeyDown={submitInputStep} autoComplete="off" />
         </div>
       </section>
 
       <section className={`chirp-ob-screen ${screen === 'loading' ? 'active' : ''}`}>
         <div className="chirp-ob-bird"><OnboardingBird /></div>
-        <div className="chirp-ob-loading">chirp 观察中...</div>
+        <div className="chirp-ob-loading">{isChinese ? 'chirp 观察中...' : 'chirp is observing...'}</div>
       </section>
 
       <section className={`chirp-ob-screen ${screen === 'result' ? 'active' : ''}`}>
         <div className="chirp-ob-result-avatar"><OnboardingAnimalAvatar animal={resultAnimal} /></div>
-        <div className="chirp-ob-result-label">你是</div>
-        <div className="chirp-ob-result-animal">{result?.name}</div>
-        <div className="chirp-ob-result-keywords">{result?.kw}</div>
-        <div className="chirp-ob-result-msg">{result?.msg}</div>
-        <div className="chirp-ob-result-sig">— 来自{birdName || 'bird'}</div>
-        <button className="chirp-ob-primary" type="button" onClick={finish}>继续 →</button>
+        <div className="chirp-ob-result-label">{isChinese ? '你是' : 'You are'}</div>
+        <div className="chirp-ob-result-animal">{isChinese ? result?.name : result?.englishName}</div>
+        <div className="chirp-ob-result-keywords">{isChinese ? result?.kw : result?.traitsEn}</div>
+        <div className="chirp-ob-result-msg">{isChinese ? result?.msg : result?.lineEn}</div>
+        <div className="chirp-ob-result-sig">{isChinese ? `— 来自${existingProfile?.birdName || birdName || 'bird'}` : `- From ${existingProfile?.birdName || birdName || 'bird'}`}</div>
+        <button className="chirp-ob-primary" type="button" onClick={finish}>{isChinese ? '继续 →' : 'Continue →'}</button>
       </section>
 
       {isQuestion && (
         <div className="chirp-ob-nav">
-          <button className={`chirp-ob-back ${screen === 'q1' ? 'hidden' : ''}`} type="button" onClick={goBack}>← 上一题</button>
-          <button className={`chirp-ob-next ${canGoNext() ? '' : 'disabled'}`} type="button" onClick={goNext}>{screen === 'q7' ? '就这个了 ✓' : '下一题 →'}</button>
+          <button className={`chirp-ob-back ${screen === 'q1' ? 'hidden' : ''}`} type="button" onClick={goBack}>{isChinese ? '← 上一题' : '← Back'}</button>
         </div>
       )}
     </div>
   )
 }
 
-function PlanetCard({ planet, recent }) {
+function PlanetCard({ planet, recent, language }) {
   const Art = planetArt[planet.id] || LoveCat
   const className = planet.id === 'work' ? 'pc-work' : 'pc-love'
+  const isChinese = language === 'zh'
 
   return (
     <button className={`planet-card ${className}`} type="button" onClick={() => navigateTo('chirp', 'planet', planet.id)}>
       <div className="pc-avatar"><Art /></div>
       <div className="pc-name">{getPlanetCardTitle(planet)}</div>
       <div className="pc-quote">{recent.text}</div>
-      <time className="pc-time">{recent.time}</time>
+      <time className="pc-time">{localizeActivityTime(recent.time, isChinese)}</time>
     </button>
   )
 }
 
-function PersonaPage({ personas, planets, user, onPersonasChange }) {
+function PersonaPage({ personas, planets, user, onPersonasChange, language }) {
+  const isChinese = language === 'zh'
   const [creatorOpen, setCreatorOpen] = useState(false)
   const [usePersona, setUsePersona] = useState(null)
   const [toast, setToast] = useState('')
@@ -1315,11 +1371,11 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
     event.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      showToast('Please choose an image file.')
+      showToast(isChinese ? '请选择图片文件。' : 'Please choose an image file.')
       return
     }
     if (file.size > 3 * 1024 * 1024) {
-      showToast('Avatar must be under 3MB.')
+      showToast(isChinese ? '头像图片需小于 3MB。' : 'Avatar must be under 3MB.')
       return
     }
     const reader = new FileReader()
@@ -1335,7 +1391,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
     const name = draft.name.trim()
     const systemPrompt = draft.systemPrompt.trim()
     if (!name || !systemPrompt) {
-      showToast('Name and system prompt are required.')
+      showToast(isChinese ? '名称和系统提示词不能为空。' : 'Name and system prompt are required.')
       return
     }
 
@@ -1345,7 +1401,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
         uploadedAvatarUrl = await uploadPersonaAvatar(user, draft.avatarFile)
       } catch (error) {
         console.warn('Failed to upload persona avatar:', error)
-        showToast('Avatar upload failed. Persona saved without image.')
+        showToast(isChinese ? '头像上传失败，分身将不带图片保存。' : 'Avatar upload failed. Persona saved without image.')
       }
     }
 
@@ -1353,7 +1409,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
       id: `custom-${Date.now()}`,
       name,
       role: draft.role.trim() || 'custom persona',
-      description: draft.description.trim() || 'A custom persona created by you for private Planet conversations.',
+      description: draft.description.trim() || (isChinese ? '你为私人星球对话创建的自定义分身。' : 'A custom persona created by you for private Planet conversations.'),
       systemPrompt,
       skills: draft.skills.trim(),
       avatarUrl: uploadedAvatarUrl || (!user ? draft.avatarUrl : ''),
@@ -1376,7 +1432,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
     setDraft({ name: '', role: '', description: '', systemPrompt: '', skills: '', avatarUrl: '', avatarFile: null, color: DEFAULT_PERSONA_COLOR })
     setCreatorOpen(false)
     onPersonasChange()
-    showToast('Persona created.')
+    showToast(isChinese ? '分身已创建。' : 'Persona created.')
   }
 
   const attachPersona = async (planet, persona) => {
@@ -1391,7 +1447,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
       }
     }
     setUsePersona(null)
-    showToast(`${persona.name} added to ${planet.roomName}.`)
+    showToast(isChinese ? `${persona.name} 已加入 ${planet.roomName}。` : `${persona.name} added to ${planet.roomName}.`)
   }
 
   return (
@@ -1400,25 +1456,25 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
         <button className="chirp-persona-card chirp-persona-create" type="button" onClick={() => setCreatorOpen(true)}>
           <div className="persona-title-row persona-create-title-row">
             <span className="persona-avatar persona-create-avatar">+</span>
-            <strong>Create Persona</strong>
+            <strong>{isChinese ? '创建分身' : 'Create Persona'}</strong>
           </div>
-          <p>Write a system prompt, define skills, and upload an avatar.</p>
+          <p>{isChinese ? '编写系统提示词，定义技能，并上传头像。' : 'Write a system prompt, define skills, and upload an avatar.'}</p>
           <div className="persona-card-foot">
-            <span className="persona-create-button">Create</span>
+            <span className="persona-create-button">{isChinese ? '创建' : 'Create'}</span>
           </div>
         </button>
 
         {personas.map(persona => (
           <article className={`chirp-persona-card persona-${persona.pricing}`} key={persona.id} style={getPersonaThemeStyle(persona)}>
-            <div className="persona-price">{persona.pricing === 'paid' ? 'Paid' : 'Free'}</div>
+            <div className="persona-price">{persona.pricing === 'paid' ? (isChinese ? '付费' : 'Paid') : (isChinese ? '免费' : 'Free')}</div>
             <div className="persona-title-row">
               <div className="persona-avatar"><PersonaAvatar persona={persona} /></div>
               <h2>{persona.name}</h2>
             </div>
-            <p>{persona.description}</p>
+            <p>{isChinese && PERSONA_DESCRIPTION_ZH[persona.id] ? PERSONA_DESCRIPTION_ZH[persona.id] : persona.description}</p>
             <div className="persona-card-foot">
-              <span>{persona.usageCount || 0} in use</span>
-              <button type="button" onClick={() => setUsePersona(persona)}>Use</button>
+              <span>{isChinese ? `${persona.usageCount || 0} 个使用中` : `${persona.usageCount || 0} in use`}</span>
+              <button type="button" onClick={() => setUsePersona(persona)}>{isChinese ? '使用' : 'Use'}</button>
             </div>
           </article>
         ))}
@@ -1428,7 +1484,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
         <div className="persona-modal-layer">
           <section className="persona-modal">
             <button className="persona-modal-close" type="button" onClick={() => setCreatorOpen(false)}>×</button>
-            <h2>Create Persona</h2>
+            <h2>{isChinese ? '创建分身' : 'Create Persona'}</h2>
             <div className="persona-modal-top-row">
               <label className="persona-avatar-picker" style={{ '--draft-avatar-bg': draft.color }}>
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} />
@@ -1437,16 +1493,16 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
                 ) : (
                   <span>{getPersonaAvatarLabel(draft.name)}</span>
                 )}
-                <em>上传图片设置头像</em>
+                <em>{isChinese ? '上传图片设置头像' : 'Upload an avatar image'}</em>
               </label>
-              <div className="persona-color-palette" aria-label="Choose avatar color">
+              <div className="persona-color-palette" aria-label={isChinese ? '选择头像颜色' : 'Choose avatar color'}>
                 {PERSONA_AVATAR_COLORS.map(color => (
                   <button
                     className={draft.color === color ? 'active' : ''}
                     type="button"
                     key={color}
                     style={{ backgroundColor: color }}
-                    aria-label={`Use color ${color}`}
+                    aria-label={isChinese ? `使用颜色 ${color}` : `Use color ${color}`}
                     onClick={() => setDraft(prev => ({ ...prev, color }))}
                   />
                 ))}
@@ -1454,7 +1510,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
                   <input
                     type="color"
                     value={customColor}
-                    aria-label="Choose custom avatar color"
+                    aria-label={isChinese ? '选择自定义头像颜色' : 'Choose custom avatar color'}
                     onChange={(event) => {
                       setCustomColor(event.target.value)
                       setDraft(prev => ({ ...prev, color: event.target.value }))
@@ -1465,22 +1521,22 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
               </div>
             </div>
             <label className="persona-name-field">
-              <span>Name</span>
+              <span>{isChinese ? '名称' : 'Name'}</span>
               <input value={draft.name} onChange={(event) => setDraft(prev => ({ ...prev, name: event.target.value }))} />
             </label>
             <label>
-              <span>Skill</span>
+              <span>{isChinese ? '技能' : 'Skill'}</span>
               <input value={draft.skills} onChange={(event) => setDraft(prev => ({ ...prev, skills: event.target.value }))} />
             </label>
             <label>
-              <span>Short intro</span>
+              <span>{isChinese ? '简短介绍' : 'Short intro'}</span>
               <textarea value={draft.description} onChange={(event) => setDraft(prev => ({ ...prev, description: event.target.value }))} rows="3" />
             </label>
             <label>
-              <span>System prompt</span>
+              <span>{isChinese ? '系统提示词' : 'System prompt'}</span>
               <textarea value={draft.systemPrompt} onChange={(event) => setDraft(prev => ({ ...prev, systemPrompt: event.target.value }))} rows="5" />
             </label>
-            <button className="persona-primary" type="button" onClick={createPersona}>Create</button>
+            <button className="persona-primary" type="button" onClick={createPersona}>{isChinese ? '创建' : 'Create'}</button>
           </section>
         </div>
       )}
@@ -1489,7 +1545,7 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
         <div className="persona-modal-layer">
           <section className="persona-use-panel">
             <button className="persona-modal-close" type="button" onClick={() => setUsePersona(null)}>×</button>
-            <h2>Add to Planet</h2>
+            <h2>{isChinese ? '加入星球' : 'Add to Planet'}</h2>
             {planets.map(planet => {
               const Avatar = planet.avatar
               return (
@@ -1509,9 +1565,10 @@ function PersonaPage({ personas, planets, user, onPersonasChange }) {
   )
 }
 
-function DrawerPlanetCard({ planet, onClick, recent }) {
+function DrawerPlanetCard({ planet, onClick, recent, language }) {
   const Art = planetArt[planet.id] || LoveCat
   const className = planet.id === 'work' ? 'pc-work' : 'pc-love'
+  const isChinese = language === 'zh'
 
   return (
     <button className={`planet-card drawer-planet-card ${className}`} type="button" onClick={onClick}>
@@ -1520,7 +1577,7 @@ function DrawerPlanetCard({ planet, onClick, recent }) {
         <div className="drawer-planet-copy">
           <div className="drawer-planet-row">
             <div className="pc-name">{truncateTitle(getPlanetCardTitle(planet), 4)}</div>
-            <time className="pc-time">{recent.time}</time>
+            <time className="pc-time">{localizeActivityTime(recent.time, isChinese)}</time>
           </div>
           <div className="pc-quote">{recent.rawText || recent.text}</div>
         </div>
@@ -1529,14 +1586,15 @@ function DrawerPlanetCard({ planet, onClick, recent }) {
   )
 }
 
-function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWidth, onResizeStart }) {
+function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWidth, onResizeStart, language }) {
+  const isChinese = language === 'zh'
   return (
     <>
-      {open && <button className="chirp-home-drawer-scrim" type="button" aria-label="Close menu" onClick={onClose} />}
+      {open && <button className="chirp-home-drawer-scrim" type="button" aria-label={isChinese ? '关闭菜单' : 'Close menu'} onClick={onClose} />}
       <aside className={`chirp-home-drawer ${open ? 'open' : ''}`} style={{ '--drawer-width': `${drawerWidth}px` }}>
         <div className="chirp-home-drawer-head">
           {mode === 'planets' ? (
-            <strong>My Planet</strong>
+            <strong>{isChinese ? '我的星球' : 'My Planet'}</strong>
           ) : (
             <button
               className="chirp-home-drawer-home"
@@ -1549,7 +1607,7 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
               home
             </button>
           )}
-          <button type="button" aria-label="Close menu" onClick={onClose}>×</button>
+          <button type="button" aria-label={isChinese ? '关闭菜单' : 'Close menu'} onClick={onClose}>×</button>
         </div>
 
         {mode === 'menu' ? (
@@ -1562,7 +1620,7 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
                 navigateTo('chirp', 'planet', CHIRP_PLANETS[0].id)
               }}
             >
-              <span>◐</span><strong>Planet</strong>
+              <span>◐</span><strong>{isChinese ? '星球' : 'Planet'}</strong>
             </button>
             <button
               type="button"
@@ -1571,29 +1629,30 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
                 navigateTo('chirp', 'persona')
               }}
             >
-              <span>◎</span><strong>Persona</strong>
+              <span>◎</span><strong>{isChinese ? '分身' : 'Persona'}</strong>
             </button>
             <button
               type="button"
               onClick={() => {
                 onClose()
-                navigateTo('chirp', 'moments')
+                navigateTo('chirp', 'about-me')
               }}
             >
-              <span>✎</span><strong>Moments</strong>
+              <span>○</span><strong>{isChinese ? '关于我' : 'About Me'}</strong>
             </button>
           </div>
         ) : (
           <div className="chirp-home-drawer-planets">
-            <button className="planet-card pc-create drawer-planet-card drawer-create-card" type="button" aria-label="Create planet">
+            <button className="planet-card pc-create drawer-planet-card drawer-create-card" type="button" aria-label={isChinese ? '创建星球' : 'Create planet'}>
               <span className="drawer-create-plus">+</span>
-              <span className="drawer-create-label">create my planet</span>
+              <span className="drawer-create-label">{isChinese ? '创建我的星球' : 'create my planet'}</span>
             </button>
             {planets.map(planet => (
               <DrawerPlanetCard
                 key={planet.id}
                 planet={planet}
                 recent={recentFor(planet)}
+                language={language}
                 onClick={() => {
                   onClose()
                   navigateTo('chirp', 'planet', planet.id)
@@ -1605,10 +1664,10 @@ function SideDrawer({ open, mode, setMode, onClose, recentFor, planets, drawerWi
 
         <div className="chirp-home-drawer-admin">
           <span className="chirp-drawer-bird-avatar"><HomeBird /></span>
-          <strong>Bird</strong>
-          <button type="button">Chat</button>
+          <strong>{isChinese ? '小鸟' : 'Bird'}</strong>
+          <button type="button">{isChinese ? '聊天' : 'Chat'}</button>
         </div>
-        <button className="chirp-home-drawer-resize" type="button" aria-label="Resize sidebar" onMouseDown={onResizeStart} />
+        <button className="chirp-home-drawer-resize" type="button" aria-label={isChinese ? '调整侧栏宽度' : 'Resize sidebar'} onMouseDown={onResizeStart} />
       </aside>
     </>
   )

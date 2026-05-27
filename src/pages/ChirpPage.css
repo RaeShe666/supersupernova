@@ -17,6 +17,7 @@
 }
 
 .chirp-page {
+  --chirp-ui-font: "ArimoChirp", "PingFang SC", "Hiragino Sans GB", "Noto Sans Simplified Chinese", "Noto Sans SC", "Microsoft YaHei", sans-serif;
   --chirp-ink: #2A2A2A;
   --chirp-muted: #77777C;
   --chirp-line: #D9D9DD;
@@ -31,7 +32,7 @@
   min-height: 0;
   background: #FAFAF7;
   color: var(--chirp-ink);
-  font-family: "ArimoChirp", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--chirp-ui-font);
   overflow: hidden;
 }
 
@@ -673,7 +674,7 @@
   overflow: hidden;
   border-radius: 12px;
   color: #1F1F1F;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--chirp-ui-font);
   font-size: 18px;
   font-weight: 700;
 }
