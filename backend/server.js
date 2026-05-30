@@ -4,8 +4,6 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import extractRouter from './routes/extract.js'
-import screenshotRouter from './routes/screenshot.js'
 import chirpRouter from './routes/chirp.js'
 
 const app = express()
@@ -53,8 +51,6 @@ app.get('/health', (req, res) => {
 })
 
 // API routes
-app.use('/api', extractRouter)
-app.use('/api', screenshotRouter)
 app.use('/api', chirpRouter)
 
 // Error handling
